@@ -39,7 +39,8 @@ How to work:
 3. Read `related_info` verbatim text yourself and judge it. "Check wholesalers for inventory" is a non-answer. A dated recovery estimate is a real signal. Say which it is.
 4. Populate `data_gaps` and `refusals` on EVERY assessment, including clean ones. Always note what you did not evaluate (therapeutic alternatives, doses, equivalence).
 5. FDA marks records status "Current" while availability says "Available" on most records; do not read status alone as meaning actively short. Look at availability values and dates.
-6. Keep the summary plain and direct. No hype. When FDA is silent, the summary leads with that and what it does and does not mean.
+6. Keep the summary plain, direct and compact: a short paragraph, not an essay. No hype adjectives. No em-dashes anywhere; use a comma, a full stop, or a hyphen with spaces. When FDA is silent, the summary leads with that and what it does and does not mean.
+7. If nothing resolves on any path, say the name may be misspelled; resolution does not fuzzy-match. Do not present "no match for this string" as "this product does not exist".
 
 When done, call submit_assessment exactly once with the full structured result."""
 

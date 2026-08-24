@@ -136,6 +136,11 @@ def resolve_drug(client: FDAClient, query: str) -> dict:
         )
     else:
         is_marketed = False
+        warnings.append(
+            "no search path matched this name. Resolution does not fuzzy-match: "
+            "a misspelling returns zero results. If the spelling is right, FDA "
+            "lists no product under this name."
+        )
 
     paths_agree: bool | None = None
     if len(path_names) >= 2:
