@@ -89,26 +89,37 @@ def _sse(event: str, data) -> str:
 def _run_assessment(drug: str, key: str, q: queue.Queue) -> None:
     """Worker thread: run the agent, forward trimmed events, then the result.
     Caches here, not in the response generator, so a client who disconnects
-    mid-stream still leaves a warm cache behind."""
+    mid-stream still leaves a warm cache behind. The trace events are cached
+    with the result so later cache hits can replay the actual work performed
+    instead of an unexplained answer."""
+    events: list[tuple[str, dict]] = []
+
+    def emit(kind: str, payload: dict) -> None:
+        events.append((kind, payload))
+        q.put((kind, payload))
 
     def on_event(kind: str, payload: dict) -> None:
         if kind == "tool_call":
-            q.put(("tool_call", {"name": payload["name"], "input": payload["input"]}))
+            emit("tool_call", {"name": payload["name"], "input": payload["input"]})
         elif kind == "tool_result":
             prov = payload.get("result", {}).get("provenance", {})
-            q.put(("tool_result", {
+            emit("tool_result", {
                 "name": payload["name"],
                 "matched": prov.get("total_matched"),
                 "returned": prov.get("returned"),
                 "warnings": prov.get("warnings", []),
                 "error": payload.get("result", {}).get("error"),
-            }))
+            })
         elif kind == "text":
-            q.put(("status", {"message": payload["text"][:300]}))
+            emit("status", {"message": payload["text"][:300]})
 
     try:
         result = assess(drug, on_event=on_event)
-        _cache_put(key, result.model_dump())
+        _cache_put(key, {
+            "assessment": result.model_dump(),
+            "events": events,
+            "cached_at": time.time(),
+        })
         q.put(("__result__", result.model_dump()))
     except Exception as exc:
         q.put(("__error__", str(exc)))
@@ -131,8 +142,15 @@ def assess_stream(drug: str):
     cached = _cache_get(key)
     if cached is not None:
         def replay():
-            yield _sse("status", {"message": "serving cached assessment"})
-            yield _sse("done", cached)
+            for kind, payload in cached.get("events", []):
+                yield _sse(kind, payload)
+            age_min = max(0, int((time.time() - cached.get("cached_at", 0)) / 60))
+            yield _sse("status", {"message": (
+                f"assessed {age_min} minute{'s' if age_min != 1 else ''} ago. "
+                "FDA's underlying data updates about once a day, so "
+                "assessments refresh every 6 hours."
+            )})
+            yield _sse("done", cached["assessment"])
         return StreamingResponse(replay(), media_type="text/event-stream")
 
     def generate():
@@ -192,7 +210,7 @@ def assess_blocking(req: AssessRequest) -> dict:
     key = norm_name(drug)
     cached = _cache_get(key)
     if cached is not None:
-        return {"cached": True, "assessment": cached}
+        return {"cached": True, "assessment": cached["assessment"]}
     if not _gate.acquire(blocking=False):
         raise HTTPException(429, "at capacity, try again shortly")
     try:
@@ -201,5 +219,5 @@ def assess_blocking(req: AssessRequest) -> dict:
         raise HTTPException(502, f"assessment failed: {exc}")
     finally:
         _gate.release()
-    _cache_put(key, result)
+    _cache_put(key, {"assessment": result, "events": [], "cached_at": time.time()})
     return {"cached": False, "assessment": result}
