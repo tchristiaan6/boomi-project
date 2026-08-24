@@ -21,6 +21,7 @@ from core.normalize import (
 )
 from core.schemas import (
     AlternateSources,
+    ProductListing,
     DiscontinuationRecord,
     Discontinuations,
     FilteredOut,
@@ -371,10 +372,31 @@ def find_alternate_sources(
             FilteredOut(reason="ingredient_token_mismatch", count=mismatch_count)
         )
 
+    PRODUCT_LIST_CAP = 250
+    listings = [
+        ProductListing(
+            product_ndc=r.get("product_ndc"),
+            name=r.get("brand_name") or r.get("generic_name") or "?",
+            labeler=r.get("labeler_name", "?"),
+            strength=next(
+                (i.get("strength") for i in r.get("active_ingredients", [])
+                 if contains_token(i.get("name"), ingredient)), None),
+            route=",".join(sorted(r.get("route", []) or [])) or None,
+            dosage_form=r.get("dosage_form"),
+            marketing_end_date=to_iso_date(r.get("marketing_end_date")),
+        )
+        for r in kept[:PRODUCT_LIST_CAP]
+    ]
+    if len(kept) > PRODUCT_LIST_CAP:
+        warnings.append(
+            f"product list capped at {PRODUCT_LIST_CAP} of {len(kept)} entries"
+        )
+
     data = AlternateSources(
         ingredient=ingredient,
         marketed_product_count=len(kept),
         groups=groups,
+        products=listings,
         unparseable_strengths=sorted(unparseable),
     )
     prov = _provenance(

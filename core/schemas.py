@@ -94,10 +94,24 @@ class PresentationGroup(BaseModel):
     marketing_ending: list[str]        # products with a marketing_end_date, as "name (end date)"
 
 
+class ProductListing(BaseModel):
+    """One marketed product, for the user-facing product list. FDA's
+    labeler_name is the marketing labeler; some entries are repackagers or
+    distributors rather than the original manufacturer."""
+    product_ndc: str | None
+    name: str
+    labeler: str
+    strength: str | None               # raw FDA string, verbatim
+    route: str | None
+    dosage_form: str | None
+    marketing_end_date: str | None
+
+
 class AlternateSources(BaseModel):
     ingredient: str
     marketed_product_count: int
     groups: list[PresentationGroup]
+    products: list[ProductListing] = Field(default_factory=list)  # capped; see warnings
     unparseable_strengths: list[str]   # shown, not guessed at
 
 
@@ -180,3 +194,6 @@ class Assessment(BaseModel):
     # Citations: harness-built from provenance after submission, then verified
     # with live HTTP checks. The model never writes these.
     sources: list[Source] = Field(default_factory=list)
+    # The marketed-product list, harness-attached from the alternate-sources
+    # tool data. Also never model-written; the model reasons over counts.
+    products: list[ProductListing] = Field(default_factory=list)

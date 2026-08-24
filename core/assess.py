@@ -41,7 +41,7 @@ How to work:
 3. Read `related_info` verbatim text yourself and judge it. "Check wholesalers for inventory" is a non-answer. A dated recovery estimate is a real signal. Say which it is.
 4. Populate `data_gaps` and `refusals` on EVERY assessment, including clean ones. Always note what you did not evaluate (therapeutic alternatives, doses, equivalence).
 5. FDA marks records status "Current" while availability says "Available" on most records; do not read status alone as meaning actively short. Look at availability values and dates.
-6. Keep the summary plain, direct and compact: a short paragraph, not an essay. No hype adjectives. No em-dashes anywhere; use a comma, a full stop, or a hyphen with spaces. Never cite internal rule codes (R1, R5) in the summary; state the boundary in plain words.
+6. Keep the summary plain, direct and compact: a short paragraph, not an essay. No hype adjectives. No em-dashes anywhere; use a comma, a full stop, or a hyphen with spaces. Never cite internal rule codes (R1, R5) in the summary; state the boundary in plain words. Use plain words in the summary: say "manufacturers" rather than "firms" and "forms and strengths" rather than "presentations".
 7. The summary covers EVERY database you checked: shortage status, discontinuations, recalls (open vs historical), and the marketed-product base. Its FIRST sentence is the overall verdict across all of them, for example "No active FDA signals for X: no shortage listing, no open recalls, and 38 marketed products from 14 firms" or "X carries an active FDA shortage listing and one open Class II recall". Never open on a single database. After the verdict sentence, give the per-database detail with roughly the weight each finding deserves; an empty database gets one clause, not the lead. Only when FDA publishes nothing anywhere does the summary lead with that silence, and then it must say plainly that silence is not evidence of adequate supply.
 8. If nothing resolves on any path, say the name may be misspelled; resolution does not fuzzy-match. Do not present "no match for this string" as "this product does not exist".
 
@@ -172,6 +172,7 @@ def assess(
     }
 
     provenance_trace: list[Provenance] = []
+    product_listings: list[dict] = []
     messages: list[dict] = [{"role": "user", "content": f"User request: {query}"}]
     validation_retries = 0
 
@@ -203,6 +204,7 @@ def assess(
                         ]
                         payload.setdefault("query", query)
                         payload["sources"] = []  # harness-built, never model-written
+                        payload["products"] = product_listings
                         final = Assessment.model_validate(_strip_markup(payload))
                         final.sources = build_sources(provenance_trace)
                         if client.fixtures_mode != "replay":
@@ -236,11 +238,24 @@ def assess(
                         )
                     except Exception as exc:  # surface, don't die: model adapts
                         result = {"error": str(exc)}
-                emit("tool_result", {"name": block.name, "result": result})
+                # The full product list is for the user, not the model: strip
+                # it from the model-visible payload (counts and groups stay)
+                # and attach it to the final assessment instead.
+                model_result = result
+                if result.get("data", {}).get("products"):
+                    product_listings = result["data"]["products"]
+                    model_result = {
+                        **result,
+                        "data": {
+                            k: v for k, v in result["data"].items()
+                            if k != "products"
+                        },
+                    }
+                emit("tool_result", {"name": block.name, "result": model_result})
                 tool_results.append({
                     "type": "tool_result",
                     "tool_use_id": block.id,
-                    "content": json.dumps(result, default=str),
+                    "content": json.dumps(model_result, default=str),
                 })
 
             if final is not None:
