@@ -51,6 +51,35 @@ def cmd_lookup(args: argparse.Namespace) -> int:
         client.close()
 
 
+def _print_human(result) -> None:
+    from core.sources import format_sources
+
+    d = result
+    print(f"FDATrack assessment: {d.query}")
+    resolved = d.resolved_to or "(did not resolve)"
+    marketed = {True: "yes", False: "no", None: "unknown"}[d.is_marketed]
+    print(f"Resolved to: {resolved}  |  confidence: {d.resolution_confidence}"
+          f"  |  marketed: {marketed}\n")
+    print(d.summary + "\n")
+    print("Signals:")
+    for s in d.signals:
+        print(f"  - {s.kind}: {s.detail}")
+    if d.presentation_groups:
+        print("\nPresentation groups (FDA strings verbatim, no equivalence judged):")
+        for g in d.presentation_groups:
+            print(f"  - {g.parsed_strength or 'unparseable strength'}"
+                  f" | {g.route or '?'} | {g.product_count} products"
+                  f" | raw: {', '.join(g.raw_strength_strings)}")
+    print("\nWhat the data does not say:")
+    for gap in d.data_gaps:
+        print(f"  - {gap}")
+    print("\nNot evaluated (by design):")
+    for ref in d.refusals:
+        print(f"  - {ref}")
+    print(f"\nOverall confidence: {d.overall_confidence}\n")
+    print(format_sources(d.sources))
+
+
 def cmd_assess(args: argparse.Namespace) -> int:
     from core.assess import assess  # imports anthropic lazily
 
@@ -75,7 +104,10 @@ def cmd_assess(args: argparse.Namespace) -> int:
             print(f"   [model] {payload['text'][:400]}", file=sys.stderr)
 
     result = assess(args.query, on_event=on_event)
-    _print(result.model_dump())
+    if args.json:
+        _print(result.model_dump())
+    else:
+        _print_human(result)
     return 0
 
 
@@ -90,6 +122,8 @@ def main() -> int:
     p_assess.add_argument("query", help="free-text drug name")
     p_assess.add_argument("--no-trace", dest="trace", action="store_false",
                           help="suppress the tool-call trace on stderr")
+    p_assess.add_argument("--json", action="store_true",
+                          help="emit the full Assessment JSON instead of text")
     p_assess.set_defaults(func=cmd_assess, trace=True)
 
     p_lookup = sub.add_parser("lookup", help="run one tool directly, no model")

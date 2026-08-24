@@ -23,7 +23,13 @@ mcp = MCPServer(
     instructions=(
         "FDA drug signal tools. Report what FDA publishes; zero records means "
         "untracked, not adequately supplied. Never suggest a different molecule, "
-        "never compute a dose, never declare presentations equivalent."
+        "never compute a dose, never declare presentations equivalent. "
+        "CITATIONS ARE REQUIRED: every answer to the user must end with a "
+        "'Sources' section listing the query URLs from the provenance blocks "
+        "of the tools you called (plus FDA's browsable page when helpful). "
+        "Before finalizing an answer, pass those URLs to verify_sources and "
+        "report each link's verification status next to it. Cite only URLs "
+        "taken from provenance; never construct or guess a URL."
     ),
 )
 _client = FDAClient()
@@ -81,6 +87,27 @@ def get_label_facts(ndc: str) -> dict:
     """Route, strength, dosage form and packaging for one NDC product.
     Confirms a candidate product is the same route and form."""
     return t.get_label_facts(_client, ndc)
+
+
+@mcp.tool()
+def verify_sources(urls: list[str]) -> dict:
+    """Check that source URLs are live and valid before citing them to the
+    user. api.fda.gov query URLs are re-issued cheaply (limit=1); a
+    zero-match response still counts as a valid query, because zero records
+    is a real answer. Returns each URL with verified true/false and a note.
+    Call this on the provenance query URLs before finalizing an answer."""
+    from core.schemas import Source
+    from core.sources import verify_sources as _verify
+
+    sources = [Source(url=u, label="cited source") for u in urls[:20]]
+    _verify(sources)
+    return {
+        "checked": [
+            {"url": s.url, "verified": s.verified, "note": s.note}
+            for s in sources
+        ],
+        "skipped": max(0, len(urls) - 20),
+    }
 
 
 def main() -> None:

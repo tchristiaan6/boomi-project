@@ -94,6 +94,35 @@ An openFDA key is optional (`FDA_API_KEY` in `.env`, free at https://open.fda.go
 
 Because the server runs on your machine, every user is their own IP against openFDA's rate limits. That is a real advantage of local MCP over a hosted API for this data.
 
+The server exposes the six retrieval tools plus `verify_sources`, a utility the client calls to confirm every cited link is live before showing it to the user.
+
+## The messy parts: why this data is harder than it looks
+
+Everything below is a real behavior of the openFDA APIs, verified against the live service. This is the list I would put in front of a CEO to explain why "just call the FDA API" is not a plan.
+
+1. **The shortage flag does not mean what it says.** Two thirds of records marked as a "Current" shortage simultaneously say the product is "Available." Alerting on the status flag alone would page people constantly about nothing.
+2. **Silence is ambiguous, and silence is the common case.** Zero records for a drug can mean supply is fine, or that nobody reports the problem to FDA. The database cannot tell you which. Propofol, the most-used drug in an OR, has zero shortage records ever.
+3. **Fields that should be codes contain sentences.** The "availability" field, supposedly a status code, contains free text like "Next Delivery and Estimated Recovery: December 2028." One record's status is "Unvailable" - FDA's own typo, live in production.
+4. **The same drug has different names in different databases.** Shortages say "Rocuronium Bromide Injection," the product directory says "ROCURONIUM BROMIDE." The one clean identifier that links them exists in the data but cannot be searched on the product directory. Matching is guesswork that has to be checked.
+5. **Two date formats in one API.** One database writes 08/17/2026, another writes 20161102. Compare them naively and every date calculation is wrong.
+6. **There is no way to ask "what changed?"** The field meant to track changes is filled in on 2 of every 1,000 records, and 77% of daily updates are FDA saying it looked and nothing changed. Anyone who wants change detection has to store snapshots and compare them.
+7. **Strength labels are not standardized.** 10 mg/mL, 50 mg/5 mL and 100 mg/10 mL are the same concentration written three ways. Count them naively and you tell a buyer there are 8 makers of rocuronium when the true answer is 68.
+8. **Factory chemicals are listed next to hospital vials.** The product directory mixes bulk drums of raw ingredient ("1 kg/kg") in with finished products. A source count that includes them is wrong and looks fine.
+9. **Search takes your words too literally.** Searching enforcement records for "dog" returns hot dog buns. Many recall records also lack structured name fields entirely, so a careful search has to combine fields and then re-check every hit. Two numbers in my own working notes were wrong because an earlier check searched too narrowly.
+10. **Even the error messages mislead.** Ask for 1,001 records and the API answers "API key missing." It is not missing; the page size cap is 1,000. A naive retry loop would chase credentials forever.
+11. **The category labels cannot be trusted for filtering.** Fentanyl is filed under "Analgesia," not "Anesthesia." Filter a watchlist by category and core drugs silently vanish.
+12. **Every record can look unique when it is not.** Shortage presentation strings embed the package's NDC number, so 26 rocuronium records read as 26 different presentations. Cleaned, they are 3.
+
+The tool layer of this build exists to absorb all twelve, so neither the model nor the user ever deals with them.
+
+## Sources on every answer
+
+Every assessment ends with a Sources section, built and checked mechanically:
+
+- The citations are the **exact API queries the tools actually issued** during that assessment, taken from the provenance trace, plus FDA's human-browsable page for each database touched. The model never writes or invents a URL.
+- Before display, **every listed link is re-checked live**: API queries are re-issued (cheaply, at one record) and web pages are fetched. Each source is labeled verified or failed. A query that returns zero matches still verifies, because "zero records" is a real answer this tool stands behind.
+- In the CLI this appears as the footer of `fdatrack assess`. Over MCP, the server instructs the client to end every answer with the same cited-and-verified Sources section, using the `verify_sources` tool before finalizing.
+
 ## Why an agent
 
 The honest version first: two of the three layers of this problem are not agentic. Detecting that a record changed is a diff. Delivering an alert is a print statement. Both are plain code here (see `monitor/` when Phase 3 lands). I used an agent only where a decision tree actually breaks:

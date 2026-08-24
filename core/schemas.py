@@ -136,6 +136,15 @@ class LabelFacts(BaseModel):
     product_type: str | None = None
 
 
+class Source(BaseModel):
+    """One citation. Built by the harness from provenance, never invented by
+    the model, and verified with a live HTTP check before display."""
+    url: str
+    label: str
+    verified: bool | None = None       # None = not checked (e.g. offline mode)
+    note: str | None = None
+
+
 # ---------------------------------------------------------------- assessment
 
 SignalKind = Literal[
@@ -167,3 +176,6 @@ class Assessment(BaseModel):
     overall_confidence: Literal["high", "medium", "low"]
     summary: str = Field(min_length=80)  # plain-language answer for the clinician
     provenance_trace: list[Provenance]
+    # Citations: harness-built from provenance after submission, then verified
+    # with live HTTP checks. The model never writes these.
+    sources: list[Source] = Field(default_factory=list)

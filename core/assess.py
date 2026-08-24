@@ -20,6 +20,7 @@ from pydantic import ValidationError
 from core import tools as t
 from core.fda_client import FDAClient
 from core.schemas import Assessment, Provenance
+from core.sources import build_sources, verify_sources
 
 DEFAULT_MODEL = "claude-sonnet-5"
 MAX_TURNS = 12
@@ -200,7 +201,12 @@ def assess(
                             p.model_dump() for p in provenance_trace
                         ]
                         payload.setdefault("query", query)
+                        payload["sources"] = []  # harness-built, never model-written
                         final = Assessment.model_validate(_strip_markup(payload))
+                        final.sources = build_sources(provenance_trace)
+                        if client.fixtures_mode != "replay":
+                            emit("text", {"text": "verifying sources..."})
+                            verify_sources(final.sources)
                         tool_results.append({
                             "type": "tool_result",
                             "tool_use_id": block.id,
