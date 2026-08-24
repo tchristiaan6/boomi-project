@@ -194,7 +194,9 @@ A correct monitor is mostly silent, which is unshowable in a live demo, so the t
 
 ## What I would do next
 
-A hosted front-end so EJ and Liz can use this without a terminal, with accounts and per-user watchlists riding on the monitor seams described above. Then batch mode for formulary-scale questions.
+- **User accounts and individual tracking.** Google login, and per-user watchlists so each person tracks their own drugs. The monitor was built for this: drug state is global, users are subscribers, and the seams (watchlist source, state store, delivery routing) are documented in `monitor/`. A hosted front-end already exists for feedback purposes (separate private repo, not part of this submission); accounts are what it needs next.
+- **A new-approvals watcher.** The monitor currently watches for changes on listed drugs. FDA's `/drug/drugsfda` endpoint (approvals) could feed a second detect source: newly approved or newly marketed drugs appearing as events. Same detect/assess/deliver shape, one more input.
+- **Batch mode** for formulary-scale questions: assess a whole list, summarize what changed. Easy to add on the engine, deliberately cut from this submission because it is hard to verify well (single-drug answers are checkable one at a time).
 
 ## Prior art
 

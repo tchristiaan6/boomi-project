@@ -70,6 +70,17 @@ def _print_human(result) -> None:
             print(f"  - {g.parsed_strength or 'unparseable strength'}"
                   f" | {g.route or '?'} | {g.product_count} products"
                   f" | raw: {', '.join(g.raw_strength_strings)}")
+    if d.products:
+        from collections import Counter
+        print(f"\nProducts ({len(d.products)} shown):")
+        for p in d.products[:15]:
+            bits = [b for b in (p.strength, p.dosage_form, p.product_ndc and f"NDC {p.product_ndc}") if b]
+            print(f"  - {p.name} | {p.labeler} | {' | '.join(bits)}")
+        if len(d.products) > 15:
+            print(f"  ... and {len(d.products) - 15} more (use --json for all)")
+        makers = Counter(p.labeler for p in d.products)
+        print(f"\nManufacturers ({len(makers)}, FDA lists these as labelers):")
+        print("  " + "; ".join(f"{name} ({n})" for name, n in makers.most_common()))
     print("\nWhat the data does not say:")
     for gap in d.data_gaps:
         print(f"  - {gap}")
