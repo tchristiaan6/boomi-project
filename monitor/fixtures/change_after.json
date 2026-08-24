@@ -1,0 +1,377 @@
+{
+ "drug": "rocuronium",
+ "fetched_at": "2026-08-25T12:00:00Z",
+ "shortages": {
+  "55150-226-10": {
+   "status": "Current",
+   "availability": "Available",
+   "update_type": "Reverified",
+   "update_date": "2026-08-25",
+   "presentation": "Rocuronium Bromide, Injection, 100 mg/10 mL (NDC 55150-226-10)",
+   "company": "Eugia US LLC",
+   "related_info": "Check wholesalers for inventory"
+  },
+  "0781-3220-95": {
+   "status": "Current",
+   "availability": "Available",
+   "update_type": "Reverified",
+   "update_date": "2026-08-25",
+   "presentation": "Rocuronium Bromide, Injection, 10 mg/1 mL (NDC 0781-3220-95)",
+   "company": "Sandoz Inc.",
+   "related_info": null
+  },
+  "66794-229-41": {
+   "status": "Current",
+   "availability": "Limited Availability",
+   "update_type": "Reverified",
+   "update_date": "2026-08-25",
+   "presentation": "Rocuronium Bromide, Injection, 100 mg/10 mL (NDC 66794-229-41)",
+   "company": "Piramal Critical Care Inc.",
+   "related_info": "On allocation"
+  },
+  "63323-426-10": {
+   "status": "Current",
+   "availability": "Available",
+   "update_type": "Reverified",
+   "update_date": "2026-08-25",
+   "presentation": "Rocuronium Bromide, Injection, 10 mg/1 mL (NDC 63323-426-10)",
+   "company": "Fresenius Kabi USA, LLC",
+   "related_info": "Check wholesalers for inventory"
+  },
+  "0781-3220-92": {
+   "status": "Current",
+   "availability": "Available",
+   "update_type": "Reverified",
+   "update_date": "2026-08-25",
+   "presentation": "Rocuronium Bromide, Injection, 10 mg/1 mL (NDC 0781-3220-92)",
+   "company": "Sandoz Inc.",
+   "related_info": null
+  },
+  "0409-3189-10": {
+   "status": "Current",
+   "availability": "Available",
+   "update_type": "Reverified",
+   "update_date": "2026-08-25",
+   "presentation": "Rocuronium Bromide, Injection, 50 mg/5 mL (10 mg/mL) (NDC 0409-3189-10)",
+   "company": "Hospira, Inc., a Pfizer Company",
+   "related_info": null
+  },
+  "63323-426-05": {
+   "status": "Current",
+   "availability": "Available",
+   "update_type": "Reverified",
+   "update_date": "2026-08-25",
+   "presentation": "Rocuronium Bromide, Injection, 10 mg/1 mL (NDC 63323-426-05)",
+   "company": "Fresenius Kabi USA, LLC",
+   "related_info": "Check wholesalers for inventory"
+  },
+  "67457-228-10": {
+   "status": "Current",
+   "availability": "Available",
+   "update_type": "Reverified",
+   "update_date": "2026-08-25",
+   "presentation": "Rocuronium Bromide, Injection, 10 mg/1 mL (NDC 67457-228-10)",
+   "company": "Mylan Institutional, a Viatris Company",
+   "related_info": null
+  },
+  "65219-065-05": {
+   "status": "Current",
+   "availability": "Unavailable",
+   "update_type": "Reverified",
+   "update_date": "2026-08-25",
+   "presentation": "Rocuronium Bromide, Injection, 10 mg/1 mL (NDC 65219-065-05)",
+   "company": "Fresenius Kabi USA, LLC",
+   "related_info": "Estimated recovery: TBD"
+  },
+  "39822-4200-2": {
+   "status": "Current",
+   "availability": "Available",
+   "update_type": "Reverified",
+   "update_date": "2026-08-25",
+   "presentation": "Rocuronium Bromide, Injection, 50 mg/5 mL (NDC 39822-4200-2)",
+   "company": "XGen Pharmaceuticals DJB, Inc.",
+   "related_info": "Tamarang is the application holder and X-Gen is the distributor/labeler"
+  },
+  "43066-013-10": {
+   "status": "Current",
+   "availability": "Available",
+   "update_type": "Reverified",
+   "update_date": "2026-08-25",
+   "presentation": "Rocuronium Bromide, Injection, 100 mg/10 mL (NDC 43066-013-10)",
+   "company": "Baxter Healthcare",
+   "related_info": null
+  },
+  "66794-228-41": {
+   "status": "Current",
+   "availability": "Limited Availability",
+   "update_type": "Reverified",
+   "update_date": "2026-08-25",
+   "presentation": "Rocuronium Bromide, Injection, 50 mg/5 mL (NDC 66794-228-41)",
+   "company": "Piramal Critical Care Inc.",
+   "related_info": "On allocation"
+  },
+  "0409-1403-10": {
+   "status": "Current",
+   "availability": "Available",
+   "update_type": "Reverified",
+   "update_date": "2026-08-25",
+   "presentation": "Rocuronium Bromide, Injection, 50 mg/5 mL (10 mg/mL) (NDC 0409-1403-10)",
+   "company": "Hospira, Inc., a Pfizer Company",
+   "related_info": null
+  },
+  "55150-225-05": {
+   "status": "Current",
+   "availability": "Available",
+   "update_type": "Reverified",
+   "update_date": "2026-08-25",
+   "presentation": "Rocuronium Bromide, Injection, 50 mg/5 mL (NDC 55150-225-05)",
+   "company": "Eugia US LLC",
+   "related_info": "Check wholesalers for inventory"
+  },
+  "0409-7037-10": {
+   "status": "Current",
+   "availability": "Available",
+   "update_type": "Reverified",
+   "update_date": "2026-08-25",
+   "presentation": "Rocuronium Bromide, Injection, 100 mg/10 mL (10 mg/mL) (NDC 0409-7037-10)",
+   "company": "Hospira, Inc., a Pfizer Company",
+   "related_info": null
+  },
+  "71288-700-06": {
+   "status": "Current",
+   "availability": "Available",
+   "update_type": "Reverified",
+   "update_date": "2026-08-25",
+   "presentation": "Rocuronium Bromide, Injection, 10 mg/1 mL (NDC 71288-700-06)",
+   "company": "Meitheal Pharmaceuticals, Inc.",
+   "related_info": null
+  },
+  "39822-4200-6": {
+   "status": "Current",
+   "availability": "Available",
+   "update_type": "Reverified",
+   "update_date": "2026-08-25",
+   "presentation": "Rocuronium Bromide, Injection, 100 mg/10 mL (NDC 39822-4200-6)",
+   "company": "XGen Pharmaceuticals DJB, Inc.",
+   "related_info": "Tamarang is the application holder and X-Gen is the distributor/labeler"
+  },
+  "0143-9251-10": {
+   "status": "To Be Discontinued",
+   "availability": "Available",
+   "update_type": "Reverified",
+   "update_date": "2026-08-25",
+   "presentation": "Rocuronium Bromide, Injection, 10 mg/1 mL (NDC 0143-9251-10)",
+   "company": "Hikma Pharmaceuticals USA, Inc.",
+   "related_info": "Additional lots will be available. Product will be made available as it is released."
+  },
+  "43066-007-10": {
+   "status": "Current",
+   "availability": "Available",
+   "update_type": "Reverified",
+   "update_date": "2026-08-25",
+   "presentation": "Rocuronium Bromide, Injection, 50 mg/5 mL (NDC 43066-007-10)",
+   "company": "Baxter Healthcare",
+   "related_info": null
+  },
+  "0143-9250-10": {
+   "status": "Current",
+   "availability": "Unavailable",
+   "update_type": "Reverified",
+   "update_date": "2026-08-25",
+   "presentation": "Rocuronium Bromide, Injection, 10 mg/1 mL (NDC 0143-9250-10)",
+   "company": "Hikma Pharmaceuticals USA, Inc.",
+   "related_info": "Additional lots will be available.  Product will be made available as it is released."
+  },
+  "67457-228-05": {
+   "status": "Current",
+   "availability": "Available",
+   "update_type": "Reverified",
+   "update_date": "2026-08-25",
+   "presentation": "Rocuronium Bromide, Injection, 10 mg/1 mL (NDC 67457-228-05)",
+   "company": "Mylan Institutional, a Viatris Company",
+   "related_info": null
+  },
+  "71288-718-11": {
+   "status": "Current",
+   "availability": "Available",
+   "update_type": "Reverified",
+   "update_date": "2026-08-25",
+   "presentation": "Rocuronium Bromide, Injection, 10 mg/1 mL (NDC 71288-718-11)",
+   "company": "Meitheal Pharmaceuticals, Inc.",
+   "related_info": null
+  },
+  "25021-687-05": {
+   "status": "Current",
+   "availability": "Available",
+   "update_type": "Reverified",
+   "update_date": "2026-08-25",
+   "presentation": "Rocuronium Bromide, Injection, 10 mg/1 mL (NDC 25021-687-05)",
+   "company": "Sagent Pharmaceuticals",
+   "related_info": null
+  },
+  "65219-442-05": {
+   "status": "Current",
+   "availability": "Available",
+   "update_type": "Reverified",
+   "update_date": "2026-08-25",
+   "presentation": "Rocuronium Bromide, Injection, 10 mg/1 mL (NDC 65219-442-05)",
+   "company": "Fresenius Kabi USA, LLC",
+   "related_info": "Check wholesalers for inventory"
+  },
+  "0409-5160-10": {
+   "status": "Current",
+   "availability": "Available",
+   "update_type": "Reverified",
+   "update_date": "2026-08-25",
+   "presentation": "Rocuronium Bromide, Injection, 100 mg/10 mL (10 mg/mL) (NDC 0409-5160-10)",
+   "company": "Hospira, Inc., a Pfizer Company",
+   "related_info": null
+  },
+  "65219-444-10": {
+   "status": "Current",
+   "availability": "Available",
+   "update_type": "Reverified",
+   "update_date": "2026-08-25",
+   "presentation": "Rocuronium Bromide, Injection, 10 mg/1 mL (NDC 65219-444-10)",
+   "company": "Fresenius Kabi USA, LLC",
+   "related_info": "Check wholesalers for inventory"
+  }
+ },
+ "recalls": {
+  "D-883-2015": {
+   "status": "Terminated",
+   "classification": "Class II",
+   "description": "Rocuronium Bromide active pharmaceutical ingredient packaged in varying grams or kg in bags or drums, Attix Pharmaceutic"
+  },
+  "D-0089-2017": {
+   "status": "Terminated",
+   "classification": "Class II",
+   "description": "rocuronium Bromide, 10 mg per mL, 50 mg per 5 mL, Preservative Free, 5 mL Total Volume in a syringe, For IV Use, Rx only"
+  },
+  "D-0374-2025": {
+   "status": "Terminated",
+   "classification": "Class II",
+   "description": "Rocuronium Bromide 50 mg per 5mL (10mg per mL),  5mL Single Dose Syringe, Rx only, Leiters Health, 13796 Compark Blvd, E"
+  },
+  "D-0928-2023": {
+   "status": "Terminated",
+   "classification": "Class II",
+   "description": "ROcuronium Bromide 50 mg/5 mL ( 10 mg/mL), 5mL Syringe, RX Only, Advanced Compounding Solutions, 4 Constitution Way Ste "
+  },
+  "D-1339-2016": {
+   "status": "Terminated",
+   "classification": "Class II",
+   "description": "Rocuronium 10mg/ml 10ml fill in a 10ml BD syringe; Rx Only, Compounded by PHARMAKON Pharmaceuticals, Noblesville, IN 460"
+  },
+  "D-1079-2017": {
+   "status": "Terminated",
+   "classification": "Class II",
+   "description": "Rocuronium Bromide Injection Solution 5 mL, 50 mg/5 mL (10 mg/mL) Single-Dose Syringe, Rx Only, Cantrell Drug Company 73"
+  },
+  "D-0019-2022": {
+   "status": "Terminated",
+   "classification": "Class II",
+   "description": "Rocuronium Bromide Injection 50mg/5 mL, 5mL Multi-Dose Vial, Rx only, Manufactured for: Piramal Critical Care, Bethlehem"
+  },
+  "D-1045-2018": {
+   "status": "Terminated",
+   "classification": "Class II",
+   "description": "10 mg/mL Rocuronium Bromide (Preservative Free) 5 mL BD Syringe, PharMEDium Services, LLC."
+  },
+  "D-0099-2023": {
+   "status": "Terminated",
+   "classification": "Class II",
+   "description": "Rocuronium Bromide Injection, 50 mg/5 mL (10 mg/mL), 5 x 5 mL Pre-Filled Syringe, 6 x 5 syringe carton, Rx Only, Nephron"
+  },
+  "D-0202-2017": {
+   "status": "Terminated",
+   "classification": "Class II",
+   "description": "Rocuronium Bromide 50 mg/5 mL Injection Solution, 5 mL (10 mg/mL) Single-Dose Syringe, Injection Solution For Slow IV Us"
+  },
+  "D-0591-2016": {
+   "status": "Terminated",
+   "classification": "Class II",
+   "description": "Rocuronium 10 mg/mL, injectable packed in syringes, Total dosage 50 mg/ 5mL, Rx only, PHARMAKON Pharmaceuticals, Inc."
+  },
+  "D-0371-2024": {
+   "status": "Terminated",
+   "classification": "Class II",
+   "description": "Rocuronium Bromide Injection, Preservative Free, 10 mg / mL, Multiple-Dose Vial 10 mL, Rx only, Mfg: Auromedics Pharma L"
+  },
+  "D-1277-2022": {
+   "status": "Terminated",
+   "classification": "Class II",
+   "description": "Rocuronium Bromide Injection, 50 mg/5 mL (10 mg/mL) syringe, packaged in 5 x 5 mL Pre-Filled Syringes per carton, 6 x 5 "
+  },
+  "D-0467-2018": {
+   "status": "Terminated",
+   "classification": "Class II",
+   "description": "Rocuronium Bromide in all strengths, all doses, and all packaging."
+  },
+  "D-1083-2020": {
+   "status": "Terminated",
+   "classification": "Class II",
+   "description": "rocuronium Bromide 10 mg per mL 50 mg per 5 mL, 5 mL BD Syringe, For IV Use,  PharMEDium 913 N. Davis Ave. Cleveland, MS"
+  },
+  "D-0835-2017": {
+   "status": "Terminated",
+   "classification": "Class II",
+   "description": "Rocuronium Bromide all strengths, all dosage forms and all packaging, Rx Only, Avella of Houston, Houston, TX 77054"
+  },
+  "D-0968-2022": {
+   "status": "Terminated",
+   "classification": "Class II",
+   "description": "Rocuronium Bromide Injection, 50 mg/5 mL (10 mg/mL), Preservative Free, 5 mL Pre-Filled Syringe, 5 x 5 mL Pre-Filled Syr"
+  },
+  "D-1113-2023": {
+   "status": "Terminated",
+   "classification": "Class II",
+   "description": "rocuronium 50 mg/5 mL (10 mg/mL), 5 mL Syringes, Rx only, this drug was repackaged by CAPS Inc, 2200 South 43rd Avenue, "
+  },
+  "D-1076-2023": {
+   "status": "Terminated",
+   "classification": "Class II",
+   "description": "rocuronium, 50 mg /5 mL, (10 mg/mL), 5 mL Syringe, Rx only, Central Admixture Pharmacy Services, Inc., 7935 Dunbrook Roa"
+  },
+  "D-0206-2021": {
+   "status": "Terminated",
+   "classification": "Class II",
+   "description": "Rocuronium Br 100 mg/10mL (10 mg/mL), Rx Only, 10 mL Single Dose Syringe, SCA Pharmaceuticals, 8821 Knoedl Ct. Little Ro"
+  },
+  "D-0008-2024": {
+   "status": "Terminated",
+   "classification": "Class II",
+   "description": "rocuronium, 50 mg/5 mL, (10 mg/mL), 5 mL Syringe, Rx only, Central Admixture Pharmacy Services, Inc., 7935 Dunbrook Road"
+  },
+  "D-0517-2016": {
+   "status": "Terminated",
+   "classification": "Class II",
+   "description": "Rocuronium Bromide 50 MG/5ML INJ., Qty: 5 mL Vial, MFG by: Mylan Institutional, Rockford, IL 61103, Repackaged by: Remed"
+  },
+  "D-0068-2018": {
+   "status": "Terminated",
+   "classification": "Class II",
+   "description": "ROCuronium Bromide 10 mg per mL, 5 mL Fill in single dose syringe, (50 mg / 5 mL Total Dose)   Rx Only SCA Pharmaceutica"
+  },
+  "D-1333-2016": {
+   "status": "Terminated",
+   "classification": "Class II",
+   "description": "Rocuronium 10 mg/mL, 5 mL syringe, Rx Only, Compounded by PHARMAKON Pharmaceuticals, Noblesville, IN 46060, NDC  45183-0"
+  },
+  "D-0211-2021": {
+   "status": "Terminated",
+   "classification": "Class II",
+   "description": "Rocuronium Br 50 mg/5mL (10 mg/mL), a) 5 mL Single Dose Syringe Red Label(barcode 7000485009) Rx Only, SCA Pharmaceutica"
+  },
+  "D-1087-2020": {
+   "status": "Terminated",
+   "classification": "Class II",
+   "description": "rocuronium Bromide, 10 mg per mL, 50 mg per 5 mL, 5 mL BD Syringe, for IV Use, PharMEDium 13N. Davis Ave. Cleveland MS 3"
+  },
+  "D-9999-2026": {
+   "status": "Ongoing",
+   "classification": "Class II",
+   "description": "Rocuronium Bromide Injection, 10 mg/mL, synthetic demo record: particulate matter"
+  }
+ }
+}

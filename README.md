@@ -174,9 +174,27 @@ Two of the eval numbers correct my own earlier verification notes: clozapine has
 - **The refusal evals are textual.** A negation-aware substring check is honest about being a heuristic; the committed transcript exists so a human can read the actual answers.
 - **Live counts drift from committed fixtures.** Expected and documented, but it means `--live` eval runs are advisory, not pass/fail.
 
+## The monitor
+
+`monitor/` watches a list of drugs and reports only what matters. Three steps, and only the middle one is agentic:
+
+- **Detect (plain code).** Snapshot each drug's FDA state to JSON, diff against the last run. The materiality filter is the point: 77% of FDA's record activity is "we looked, nothing changed," and the filter drops all of it. What escalates: a new shortage record, availability getting worse, a To Be Discontinued flag, a new open Class I or II recall. Improvements and paperwork churn are logged as info, not alerts.
+- **Assess (the agent).** Only drugs with a material change get a full assessment. No key, no problem: events still deliver, unassessed.
+- **Deliver (plain code).** Stdout plus a JSONL log. Deliberately no email, SMS, or database.
+
+```bash
+python -m monitor.run                  # live run over monitor/watchlist.yaml
+python -m monitor.run --replay quiet   # demo: a Reverified-only day, correctly silent
+python -m monitor.run --replay change  # demo: real changes, correctly escalated
+```
+
+A correct monitor is mostly silent, which is unshowable in a live demo, so the two replay scenarios are committed fixtures: one proves it stays quiet through a day of FDA no-op touches, the other proves it escalates an availability drop, a discontinuation flag, and a new open recall (a synthetic record, labeled as such). The default watchlist is EJ and Liz's drugs; it is configuration, not scope.
+
+**Built single-user, architected for multi-user.** Drug state is global - a shortage on propofol is one fact no matter who watches it - so snapshots and diffs are keyed by drug, never by user. The pieces a hosted deployment swaps are seams, not rewrites: the watchlist becomes the union of all users' lists, `StateStore` (two methods, JSON files today) becomes a database table, and `deliver()` becomes per-user routing of each drug's events to its subscribers. Snapshot, diff, and materiality logic ship unchanged.
+
 ## What I would do next
 
-Phase 3 is a watchlist monitor: snapshot the watched drugs to JSON, diff on schedule, drop the 77% of FDA updates that are `Reverified` no-ops, and run the agent only on real changes. Detection and delivery stay plain code; a correct monitor is mostly silent, so it ships with replay fixtures showing it staying quiet on a no-op and escalating on a real change. After that: batch mode, and a hosted front-end for EJ and Liz to use without a terminal.
+A hosted front-end so EJ and Liz can use this without a terminal, with accounts and per-user watchlists riding on the monitor seams described above. Then batch mode for formulary-scale questions.
 
 ## Prior art
 

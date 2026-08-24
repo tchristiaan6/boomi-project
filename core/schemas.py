@@ -102,6 +102,7 @@ class AlternateSources(BaseModel):
 
 
 class RecallRecord(BaseModel):
+    recall_number: str | None = None   # FDA's stable id, e.g. D-123-2026
     status: str                        # Ongoing / Completed / Terminated / Pending
     classification: str                # Class I / II / III / Not Yet Classified
     product_description: str

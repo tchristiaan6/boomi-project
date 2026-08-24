@@ -173,19 +173,25 @@ def resolve_drug(client: FDAClient, query: str) -> dict:
 
 # ---------------------------------------------------------------- shortages
 
+def fetch_shortage_records(
+    client: FDAClient, ingredient: str
+) -> tuple[list[dict], int, list[str]]:
+    """Raw shortage records for the molecule, whole-word filtered.
+    Shared by get_shortage_picture and the monitor's snapshot step.
+    Returns (kept_records, total_matched, warnings, dropped_count)."""
+    search = phrase("generic_name", ingredient)
+    records, total, warnings = client.search_all(SHORTAGES, search)
+    kept = [r for r in records if contains_token(r.get("generic_name"), ingredient)]
+    return kept, total, warnings, len(records) - len(kept)
+
+
 def get_shortage_picture(client: FDAClient, ingredient: str) -> dict:
     """All shortage records for the molecule, grouped by presentation.
     related_info is returned verbatim, never summarized (spec 3.1).
     Zero records is the common case and returns cleanly (R2)."""
-    search = phrase("generic_name", ingredient)
     mark = len(client.query_log)
-    records, total, warnings = client.search_all(SHORTAGES, search)
+    kept, total, warnings, dropped = fetch_shortage_records(client, ingredient)
     queries = client.query_log[mark:]
-
-    # Guard the substring trap: keep only records whose generic_name actually
-    # contains the requested token(s).
-    kept = [r for r in records if contains_token(r.get("generic_name"), ingredient)]
-    dropped = len(records) - len(kept)
     filtered = (
         [FilteredOut(reason="generic_name_token_mismatch", count=dropped)]
         if dropped else []
@@ -380,6 +386,36 @@ def find_alternate_sources(
 
 # ---------------------------------------------------------------- recalls
 
+def fetch_recall_records(
+    client: FDAClient, ingredient: str
+) -> tuple[list[dict], int, list[str]]:
+    """Raw enforcement records for an ingredient: combined-field search with
+    the whole-word post-filter. Shared by check_recalls and the monitor.
+    Returns (kept_records, total_matched, warnings)."""
+    search = (
+        f'({phrase("openfda.generic_name", ingredient)}'
+        f'+OR+{phrase("openfda.substance_name", ingredient)}'
+        f'+OR+{phrase("openfda.brand_name", ingredient)}'
+        f'+OR+{phrase("product_description", ingredient)})'
+    )
+    raw, total, warnings = client.search_all(ENFORCEMENT, search)
+    records = [
+        r for r in raw
+        if contains_token(r.get("product_description"), ingredient)
+        or any(
+            contains_token(n, ingredient)
+            for f in ("generic_name", "substance_name", "brand_name")
+            for n in (r.get("openfda", {}).get(f) or [])
+        )
+    ]
+    if len(raw) != len(records):
+        warnings.append(
+            f"dropped {len(raw) - len(records)} phrase-search hits that "
+            "did not contain the whole word in any name field"
+        )
+    return records, total, warnings
+
+
 def check_recalls(
     client: FDAClient,
     ingredient: str | None = None,
@@ -400,31 +436,8 @@ def check_recalls(
     mark = len(client.query_log)
 
     if ingredient:
-        search = (
-            f'({phrase("openfda.generic_name", ingredient)}'
-            f'+OR+{phrase("openfda.substance_name", ingredient)}'
-            f'+OR+{phrase("openfda.brand_name", ingredient)}'
-            f'+OR+{phrase("product_description", ingredient)})'
-        )
-        raw, total, w = client.search_all(ENFORCEMENT, search)
+        records, total, w = fetch_recall_records(client, ingredient)
         warnings += w
-        # Whole-word post-filter guards the substring trap (S10.11): a record
-        # stays only if an openfda name field or the product description
-        # actually contains the requested token(s).
-        records = [
-            r for r in raw
-            if contains_token(r.get("product_description"), ingredient)
-            or any(
-                contains_token(n, ingredient)
-                for f in ("generic_name", "substance_name", "brand_name")
-                for n in (r.get("openfda", {}).get(f) or [])
-            )
-        ]
-        if len(raw) != len(records):
-            warnings.append(
-                f"dropped {len(raw) - len(records)} phrase-search hits that "
-                "did not contain the whole word in any name field"
-            )
     elif ndc:
         search = (
             f'(openfda.package_ndc:"{ndc}"+OR+openfda.product_ndc:"{ndc}"'
@@ -441,6 +454,7 @@ def check_recalls(
 
     def to_model(r: dict) -> RecallRecord:
         return RecallRecord(
+            recall_number=r.get("recall_number"),
             status=r.get("status", "?"),
             classification=r.get("classification", "?"),
             product_description=(r.get("product_description") or "")[:300],

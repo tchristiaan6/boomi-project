@@ -1,0 +1,16 @@
+# Default watchlist: the drugs EJ (CRNA) and Liz (NP) named as what actually
+# goes short in practice. This is CONFIGURATION, not scope - the tool answers
+# for any drug; edit this list freely. In a future hosted deployment each
+# user has their own list and the monitor runs over the union.
+drugs:
+  - propofol
+  - sevoflurane
+  - isoflurane
+  - desflurane
+  - lactated ringers
+  - sodium chloride
+  - cefazolin
+  - ondansetron
+  - insulin
+  - succinylcholine
+  - rocuronium
