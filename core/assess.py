@@ -25,6 +25,11 @@ from core.sources import build_sources, verify_sources
 DEFAULT_MODEL = "claude-sonnet-5"
 MAX_TURNS = 12
 
+
+class AssessmentFailed(RuntimeError):
+    """The loop could not produce a valid assessment. The message is safe to
+    show an end user; the underlying cause is chained for logs."""
+
 SYSTEM_PROMPT = """You are FDATrack, an assistant that reports what FDA publishes about a drug product. Your users are clinicians and pharmacy buyers. You answer sourcing and status questions, never clinical ones.
 
 Hard rules. These are product requirements, not suggestions:
@@ -217,12 +222,22 @@ def assess(
                         })
                     except (ValidationError, ValueError) as exc:
                         validation_retries += 1
-                        if validation_retries > 2:
-                            raise
+                        if validation_retries > 3:
+                            raise AssessmentFailed(
+                                "the model could not produce a valid "
+                                "assessment after several attempts"
+                            ) from exc
                         tool_results.append({
                             "type": "tool_result",
                             "tool_use_id": block.id,
-                            "content": f"validation error, fix and resubmit: {exc}",
+                            "content": (
+                                "Your submission was rejected. Common cause: "
+                                "malformed arguments (markup fragments inside "
+                                "JSON, a string where a list belongs, missing "
+                                "required fields). Call submit_assessment "
+                                "again with clean, complete JSON arguments. "
+                                f"Validation detail: {str(exc)[:600]}"
+                            ),
                             "is_error": True,
                         })
                     continue

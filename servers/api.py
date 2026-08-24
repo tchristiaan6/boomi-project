@@ -122,7 +122,11 @@ def _run_assessment(drug: str, key: str, q: queue.Queue) -> None:
         })
         q.put(("__result__", result.model_dump()))
     except Exception as exc:
-        q.put(("__error__", str(exc)))
+        # Full detail to server logs; a plain sentence to the user.
+        print(f"assessment failed for {drug!r}: {exc!r}", flush=True)
+        q.put(("__error__",
+               "The assessment failed on this run. This is usually "
+               "transient. Try again in a moment."))
     finally:
         q.put(None)
 
@@ -216,7 +220,10 @@ def assess_blocking(req: AssessRequest) -> dict:
     try:
         result = assess(drug).model_dump()
     except Exception as exc:
-        raise HTTPException(502, f"assessment failed: {exc}")
+        print(f"assessment failed for {drug!r}: {exc!r}", flush=True)
+        raise HTTPException(
+            502, "assessment failed; this is usually transient, try again"
+        )
     finally:
         _gate.release()
     _cache_put(key, {"assessment": result, "events": [], "cached_at": time.time()})
