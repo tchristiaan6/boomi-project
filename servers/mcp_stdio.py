@@ -11,6 +11,10 @@ from __future__ import annotations
 
 from mcp.server.mcpserver import MCPServer
 
+from core.env import load_env
+
+load_env()
+
 from core import tools as t
 from core.fda_client import FDAClient
 

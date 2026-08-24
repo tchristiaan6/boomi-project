@@ -15,6 +15,10 @@ import argparse
 import json
 import sys
 
+from core.env import load_env
+
+load_env()
+
 from core import tools as t
 from core.fda_client import FDAClient
 
