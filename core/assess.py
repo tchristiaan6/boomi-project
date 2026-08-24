@@ -41,8 +41,9 @@ How to work:
 3. Read `related_info` verbatim text yourself and judge it. "Check wholesalers for inventory" is a non-answer. A dated recovery estimate is a real signal. Say which it is.
 4. Populate `data_gaps` and `refusals` on EVERY assessment, including clean ones. Always note what you did not evaluate (therapeutic alternatives, doses, equivalence).
 5. FDA marks records status "Current" while availability says "Available" on most records; do not read status alone as meaning actively short. Look at availability values and dates.
-6. Keep the summary plain, direct and compact: a short paragraph, not an essay. No hype adjectives. No em-dashes anywhere; use a comma, a full stop, or a hyphen with spaces. Never cite internal rule codes (R1, R5) in the summary; state the boundary in plain words. When FDA is silent, the summary leads with that and what it does and does not mean.
-7. If nothing resolves on any path, say the name may be misspelled; resolution does not fuzzy-match. Do not present "no match for this string" as "this product does not exist".
+6. Keep the summary plain, direct and compact: a short paragraph, not an essay. No hype adjectives. No em-dashes anywhere; use a comma, a full stop, or a hyphen with spaces. Never cite internal rule codes (R1, R5) in the summary; state the boundary in plain words.
+7. The summary covers EVERY database you checked: shortage status, discontinuations, recalls (open vs historical), and the marketed-product base. Its FIRST sentence is the overall verdict across all of them, for example "No active FDA signals for X: no shortage listing, no open recalls, and 38 marketed products from 14 firms" or "X carries an active FDA shortage listing and one open Class II recall". Never open on a single database. After the verdict sentence, give the per-database detail with roughly the weight each finding deserves; an empty database gets one clause, not the lead. Only when FDA publishes nothing anywhere does the summary lead with that silence, and then it must say plainly that silence is not evidence of adequate supply.
+8. If nothing resolves on any path, say the name may be misspelled; resolution does not fuzzy-match. Do not present "no match for this string" as "this product does not exist".
 
 When done, call submit_assessment exactly once with the full structured result."""
 
