@@ -1,12 +1,51 @@
 # FDATrack
 
-**Status: Phase 1 (engine) built and verified against the live API. README narrative, eval suite and fixtures land in Phase 2. This notice is removed when the build is submission-ready.**
-
 An agent that answers one question for clinicians and the pharmacy staff who supply them:
 
 > **"What does FDA actually say about this product right now?"**
 
-Not "is it short." That distinction is the point. I built this for my brother, a nurse anesthetist. The first thing it told me was that FDA does not track most of what he cares about. Propofol, the drug he calls the number one in his OR: zero shortage records. The word "ringer" appears nowhere in FDA's shortage database. The tool reports every signal FDA does publish - shortages, discontinuations, recalls - and when FDA is silent it says so plainly, because silence is not evidence of adequate supply.
+That turns out to be a different question from "is it short," and the difference is the whole project.
+
+## Who this is for
+
+My brother EJ Bouwman is a CRNA. When a drug he needs is constrained, he finds out from his pharmacy or from an empty shelf. My sister-in-law Liz Ingram Bouwman is a nurse practitioner; she is the reason insulins are in scope. Both reviewed the drug list this build is tested against. The secondary user is the pharmacy buyer supplying an OR.
+
+## The finding this is built around
+
+I started with a substitution tool, then a shortage monitor. Both died on contact with the data. What killed the monitor: I asked EJ what actually goes short in his OR. He said the simplest things - normal saline, lactated ringers, the volatile gases, antibiotics, and propofol, which he called the number one drug they use. Liz added insulins.
+
+I checked every one of those against all 1,628 records in FDA's shortage database (2026-08-24):
+
+| What EJ and Liz named | Shortage records |
+|---|---|
+| Propofol - "the #1 drug we use" | **0** |
+| Sevoflurane | **0** |
+| Isoflurane | **0** |
+| Lactated Ringer's | **0** - "ringer" appears nowhere in the database |
+| Cefazolin | **0** |
+| Ondansetron | **0** |
+| Normal saline | 22, none currently active |
+| Insulin | 4, all discontinuations |
+
+Eleven of twenty-two core anesthesia drugs return zero shortage records. The reason is structural: FDA's shortage database tracks manufacturer-reported shortages of specific NDC presentations. What EJ experiences is allocation - the distributor fills 60% of the saline order, the wholesaler backorders the cefazolin. Nobody reports that to FDA, so it never appears.
+
+But FDA is not silent about these drugs, it is silent about them *in that one database*. The enforcement endpoint tells a different story. Lactated Ringer's has zero shortage mentions and 18 recall records, including an **ongoing Class I recall initiated April 2026 on B. Braun 1000 mL bags** - the exact product EJ can't get. Propofol has 19 recalls, 4 of them Class I. Sodium chloride has over 1,000.
+
+So the tool reports every signal FDA publishes about a product, across endpoints, and when FDA has nothing it says so plainly and says what that silence does and does not mean. For the drugs a clinician cares about most, "FDA does not track this" is usually the honest answer, and this tool treats that as a finding, not a failure.
+
+## What it does
+
+For any drug you name - free text, not a fixed list - it reports which of these signals exist:
+
+| Signal | Meaning |
+|---|---|
+| `shortage_current` | An active shortage record exists |
+| `discontinuation` | Flagged To Be Discontinued: permanent, not temporary |
+| `recall_open` | An open enforcement action exists |
+| `recall_historical` | Prior recalls, now terminated |
+| `no_fda_signal` | Nothing found. **This is not the same as "fine."** |
+
+Every result carries a provenance block: the exact queries issued, totals matched, what was filtered out and why, and warnings. "How do you know it's right" is answered with a trace, not a claim.
 
 ## Quick start
 
@@ -18,23 +57,27 @@ cd boomi-project
 python3 -m venv .venv && .venv/bin/pip install -e .
 ```
 
-Look up any drug with one tool, no model or API key needed:
+Run the eval suite first. It replays committed API fixtures, so it is deterministic and needs no key of any kind:
+
+```bash
+.venv/bin/python -m evals.run_evals
+```
+
+Look up any drug directly, no model needed (live API, no key required):
 
 ```bash
 .venv/bin/fdatrack lookup shortage rocuronium
-.venv/bin/fdatrack lookup recalls propofol
-.venv/bin/fdatrack lookup alternates rocuronium
-.venv/bin/fdatrack lookup resolve "lactated ringers"
+.venv/bin/fdatrack lookup recalls "lactated ringers"
+.venv/bin/fdatrack lookup alternates propofol
 ```
 
-Full agent assessment (needs `ANTHROPIC_API_KEY`; model swappable via `FDATRACK_MODEL`):
+Full agent assessment (copy `.env.example` to `.env` and add an `ANTHROPIC_API_KEY`; model swappable via `FDATRACK_MODEL`):
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-.venv/bin/fdatrack assess "rocuronium"
+.venv/bin/fdatrack assess "propofol"
 ```
 
-An openFDA API key is optional (`export FDA_API_KEY=...`, free at https://open.fda.gov/apis/authentication/). Without one you get 1,000 requests/day per IP, which covers dozens of assessments.
+An openFDA key is optional (`FDA_API_KEY` in `.env`, free at https://open.fda.gov/apis/authentication/). Without one you get 1,000 requests/day per IP, which covers dozens of assessments.
 
 ### MCP server (Claude Desktop / Claude Code)
 
@@ -43,26 +86,77 @@ An openFDA API key is optional (`export FDA_API_KEY=...`, free at https://open.f
   "mcpServers": {
     "fdatrack": {
       "command": "/absolute/path/to/boomi-project/.venv/bin/python",
-      "args": ["-m", "servers.mcp_stdio"],
-      "cwd": "/absolute/path/to/boomi-project"
+      "args": ["-m", "servers.mcp_stdio"]
     }
   }
 }
 ```
 
-Six tools: `resolve_drug`, `get_shortage_picture`, `get_discontinuations`, `find_alternate_sources`, `check_recalls`, `get_label_facts`. Every result carries a provenance block: the exact queries issued, totals, what was filtered out and why, and warnings.
+Because the server runs on your machine, every user is their own IP against openFDA's rate limits. That is a real advantage of local MCP over a hosted API for this data.
 
-## What it will not do
+## Why an agent
 
-It will not tell you to use a different drug. It will not calculate a dose. When two presentations of the same drug differ, it shows you the groups with FDA's raw strength strings and lets you decide, rather than declaring them interchangeable. These are tested behaviors, not disclaimers.
+The honest version first: two of the three layers of this problem are not agentic. Detecting that a record changed is a diff. Delivering an alert is a print statement. Both are plain code here (see `monitor/` when Phase 3 lands). I used an agent only where a decision tree actually breaks:
 
-## Layout
+1. **The right endpoint is not knowable in advance.** Ask about rocuronium and the shortage endpoint answers richly. Ask about propofol and it is empty, so the question becomes whether enforcement has anything and whether the product is even marketed. The agent decides where to look next based on what came back empty.
+2. **Free text carries the signal.** `"Next Delivery: August 2026"` and `"Check wholesalers for inventory"` are different situations. The `related_info` field is returned verbatim by the tools and judged by the model, because no parser reduces it to a flag.
+3. **Absence is ambiguous.** Zero records means adequately supplied, or untracked. Deciding which requires checking whether the product is marketed at all, then saying which reading the evidence supports.
+4. **Name resolution is fuzzy and fails per drug.** Shortages say `"Rocuronium Bromide Injection"`, NDC says `"ROCURONIUM BROMIDE"`, and the clean join key (UNII) is not searchable on the NDC endpoint. Resolution means trying paths and judging the results.
+5. **One ingredient name spans unrelated products.** Epinephrine covers homeopathic oral dilutions, auto-injectors, code-cart ampules, and 20 mg/mL dental topical. Deciding which cluster the user meant requires reading context.
 
-```
-core/       pure library: client, normalization, the six tools, the agent loop
-servers/    thin MCP stdio adapter
-cli/        assess one drug, or call one tool raw
-monitor/    (phase 3) snapshot/diff watchlist, plain code, no model
-evals/      (phase 2) golden cases verified against FDA's own site
-fixtures/   (phase 2) committed API responses for offline replay
-```
+The MCP boundary is the boundary between mechanism and judgment. Everything deterministic lives below it: pagination past the 1,000-record cap, grouping `50mg/5mL` with `10mg/mL`, filtering API-grade bulk (`1 kg/kg`), reconciling `MM/DD/YYYY` against `YYYYMMDD`, retrying name paths. Everything requiring a call lives above it. A thin one-tool-per-endpoint wrapper would push every one of those quirks into the model's context to rediscover on every run, unverifiably and differently each time.
+
+## The boundaries, and why they are honest
+
+Five rules, each an explicitly tested behavior (`evals/refusals.yaml` runs adversarial prompts against the real agent loop; the transcript in `evals/out/` is a saved run you can reproduce):
+
+- **R1 - No cross-molecule suggestion.** If no same-molecule source is available, it reports that and stops, even when pressed with "hypothetically, for education."
+- **R2 - "Not listed" is never "not short."** The most exercised rule in the build, given the coverage gap.
+- **R3 - Confidence scoped by product form.** Injectables, volatile gases, IV fluids and orals differ sharply in how well this data covers them.
+- **R4 - Never state or compute a dose.** Including "just the arithmetic" conversions between vial sizes.
+- **R5 - Group presentations, never declare equivalence.** The 68 rocuronium products clustering at one concentration are shown with FDA's raw strings. There is deliberately no `is_equivalent` field in the schema. A human judges.
+
+These refusals are not caution theater. FDA publishes no therapeutic alternatives anywhere in this API - the shortage schema is 16 fields and none is an alternative, a substitution, or an equivalence. Any substitution the tool produced would be invented, not sourced.
+
+## Evidence
+
+- `evals/cases.yaml` - 11 golden cases, 52 assertions, each hand-verified against FDA's own site. Chosen to exercise different code paths: the rich loop (rocuronium), pure silence (clozapine), silence-with-recalls (propofol, lactated ringers), discontinuation (succinylcholine), the 200-fold strength spread (epinephrine), recall volume (sodium chloride, levothyroxine), oncology (carboplatin), graceful failure (nonsense input).
+- Default mode replays committed fixtures offline: deterministic, no keys, no network.
+- `--live` reruns against api.fda.gov. Grow-only counts (recalls, NDC listings) will drift upward from the fixture date; that is the live database moving, and the README's numbers are pinned to 2026-08-24 for that reason.
+- `evals/run_refusals.py` - the adversarial suite. 4/4 passing as committed.
+
+Two of the eval numbers correct my own earlier verification notes: clozapine has 5 historical recalls and Lactated Ringer's has 18 (not zero as first recorded), because the original check searched too narrowly. Details in [AI_USAGE.md](AI_USAGE.md); both corrected numbers were hand-verified against FDA's site.
+
+## What I deliberately cut
+
+- No web front-end in this submission. Boomi said they would run it, so the interfaces are MCP and a CLI.
+- No database, no auth, no accounts, no analytics. No email/SMS delivery.
+- No therapeutic alternative logic, no dose calculation, no equivalence verdicts - ever, see above.
+- No FAERS adverse-event analysis (20.7M records, a different problem). No device/food/vet endpoints.
+- No batch or formulary mode: single drug per query. Batch is easy to add and hard to verify, so it waits.
+- No fine-tuning, no vector DB, no RAG. The data is small and structured.
+
+## Known failures and rough edges
+
+- **No fuzzy name matching.** "lactaded ringers" returns zero results with a warning saying resolution does not fuzzy-match. It fails closed and tells you, but it does not guess what you meant.
+- **Multi-ingredient products resolve by brand name only.** `find_alternate_sources` on "lactated ringers" finds nothing, because the NDC ingredients are the component salts. The resolve step reports the brand match; the alternates step cannot cluster combination fluids.
+- **Recall search can miss records** that lack `openfda` name fields *and* name the drug only by brand in the free-text description.
+- **Combination-product clustering keys on the queried ingredient's strength only.** Fine for single-ingredient injectables, coarse for multi-ingredient products.
+- **The refusal evals are textual.** A negation-aware substring check is honest about being a heuristic; the committed transcript exists so a human can read the actual answers.
+- **Live counts drift from committed fixtures.** Expected and documented, but it means `--live` eval runs are advisory, not pass/fail.
+
+## What I would do next
+
+Phase 3 is a watchlist monitor: snapshot the watched drugs to JSON, diff on schedule, drop the 77% of FDA updates that are `Reverified` no-ops, and run the agent only on real changes. Detection and delivery stay plain code; a correct monitor is mostly silent, so it ships with replay fixtures showing it staying quiet on a no-op and escalating on a real change. After that: batch mode, and a hosted front-end for EJ and Liz to use without a terminal.
+
+## Prior art
+
+Public openFDA MCP servers already exist (Certus, cyanheads/openfda-mcp-server, openpharma-org/fda-mcp, others). A thin MCP wrapper over this API is a commodity. What this build adds is the coverage-gap finding, the mechanism/judgment split at the tool boundary, the tested refusals, and provenance as a first-class output. Boomi is an integration company; a reusable tool surface that absorbs a messy public API so consumers do not have to felt like the right thing to bring to this interview.
+
+## Hours
+
+[Tom: fill in before submission - "N hours on the submitted build. Any additional hours on the hosted front-end are separate and not part of this submission."]
+
+## AI usage
+
+See [AI_USAGE.md](AI_USAGE.md) - where the model helped, where it was wrong, and how I caught it, with specifics.

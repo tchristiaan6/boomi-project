@@ -32,6 +32,7 @@ R2. Zero records means the product is not in FDA's database. That is NOT the sam
 R3. Scope your confidence by product form. Injectables, volatile gases, IV fluids and oral products differ sharply in how well this data covers them. Say what can and cannot be compared.
 R4. Never state or compute a dose, a dose conversion, or a volume adjustment.
 R5. Present presentation groups with their raw FDA strength strings. Never declare two presentations equivalent or interchangeable, and never suggest adjusting volume to compensate for a concentration difference. A human judges the groups.
+R6. When you refuse, never name the specific drugs you are refusing to discuss. "Did not evaluate alternatives such as vecuronium" hands the user a recommendation inside a refusal. Refer only to "a different molecule" or "other agents", with no examples, in every field including refusals and data_gaps.
 
 How to work:
 1. Start with resolve_drug to find what the query maps to. If nothing resolves, submit an assessment saying so honestly (resolution_confidence: low, is_marketed: false if no NDC match).
@@ -39,10 +40,28 @@ How to work:
 3. Read `related_info` verbatim text yourself and judge it. "Check wholesalers for inventory" is a non-answer. A dated recovery estimate is a real signal. Say which it is.
 4. Populate `data_gaps` and `refusals` on EVERY assessment, including clean ones. Always note what you did not evaluate (therapeutic alternatives, doses, equivalence).
 5. FDA marks records status "Current" while availability says "Available" on most records; do not read status alone as meaning actively short. Look at availability values and dates.
-6. Keep the summary plain, direct and compact: a short paragraph, not an essay. No hype adjectives. No em-dashes anywhere; use a comma, a full stop, or a hyphen with spaces. When FDA is silent, the summary leads with that and what it does and does not mean.
+6. Keep the summary plain, direct and compact: a short paragraph, not an essay. No hype adjectives. No em-dashes anywhere; use a comma, a full stop, or a hyphen with spaces. Never cite internal rule codes (R1, R5) in the summary; state the boundary in plain words. When FDA is silent, the summary leads with that and what it does and does not mean.
 7. If nothing resolves on any path, say the name may be misspelled; resolution does not fuzzy-match. Do not present "no match for this string" as "this product does not exist".
 
 When done, call submit_assessment exactly once with the full structured result."""
+
+
+import re as _re
+
+_TAG_RE = _re.compile(r"</?[a-zA-Z_][\w-]*>")
+
+
+def _strip_markup(obj):
+    """Models occasionally bleed markup artifacts (e.g. a stray '</summary>')
+    into string fields on submission. Strip tag-shaped tokens from every
+    string; none of this domain's legitimate content contains them."""
+    if isinstance(obj, str):
+        return _TAG_RE.sub("", obj).strip()
+    if isinstance(obj, list):
+        return [_strip_markup(x) for x in obj]
+    if isinstance(obj, dict):
+        return {k: _strip_markup(v) for k, v in obj.items()}
+    return obj
 
 
 def _tool_specs() -> list[dict]:
@@ -151,7 +170,7 @@ def assess(
     }
 
     provenance_trace: list[Provenance] = []
-    messages: list[dict] = [{"role": "user", "content": f"Assess this drug: {query}"}]
+    messages: list[dict] = [{"role": "user", "content": f"User request: {query}"}]
     validation_retries = 0
 
     try:
@@ -181,13 +200,13 @@ def assess(
                             p.model_dump() for p in provenance_trace
                         ]
                         payload.setdefault("query", query)
-                        final = Assessment.model_validate(payload)
+                        final = Assessment.model_validate(_strip_markup(payload))
                         tool_results.append({
                             "type": "tool_result",
                             "tool_use_id": block.id,
                             "content": "accepted",
                         })
-                    except ValidationError as exc:
+                    except (ValidationError, ValueError) as exc:
                         validation_retries += 1
                         if validation_retries > 2:
                             raise

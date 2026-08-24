@@ -13,6 +13,7 @@ Empirical constraints this client encodes (verified 2026-08-24, see spec S10):
 
 from __future__ import annotations
 
+import gzip
 import hashlib
 import json
 import os
@@ -73,7 +74,7 @@ class FDAClient:
     def _fixture_path(self, url: str) -> Path:
         digest = hashlib.sha256(url.encode()).hexdigest()[:20]
         slug = re.sub(r"[^a-z0-9]+", "_", url.split("api.fda.gov/")[-1].split("?")[0])
-        return self.fixtures_dir / f"{slug}_{digest}.json"
+        return self.fixtures_dir / f"{slug}_{digest}.json.gz"
 
     # ------------------------------------------------------------- requests
 
@@ -93,7 +94,7 @@ class FDAClient:
                 raise FDAClientError(
                     f"replay mode: no fixture for {url} (expected {path.name})"
                 )
-            return json.loads(path.read_text())
+            return json.loads(gzip.decompress(path.read_bytes()))
 
         fetch_url = url
         if self.api_key:
@@ -143,7 +144,9 @@ class FDAClient:
 
         if self.fixtures_mode == "record":
             self.fixtures_dir.mkdir(parents=True, exist_ok=True)
-            self._fixture_path(url).write_text(json.dumps(body, indent=1))
+            self._fixture_path(url).write_bytes(
+                gzip.compress(json.dumps(body).encode(), mtime=0)
+            )
         return body
 
     # ------------------------------------------------------------- public

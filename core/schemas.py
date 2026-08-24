@@ -156,10 +156,14 @@ class Assessment(BaseModel):
     resolution_confidence: Literal["high", "medium", "low"]
     is_marketed: bool | None           # distinguishes "untracked" from "does not exist"
 
-    signals: list[Signal]              # empty is NOT valid - use no_fda_signal explicitly
+    # Populated on EVERY assessment, including clean ones. An empty signals
+    # list is not valid: FDA silence is itself a signal (no_fda_signal).
+    # An assessment that never says what it did not look at is the failure
+    # mode this build exists to avoid, so the minimums are schema-enforced.
+    signals: list[Signal] = Field(min_length=1)
     presentation_groups: list[PresentationGroup]
-    data_gaps: list[str]               # explicit "the data does not say"
-    refusals: list[str]                # e.g. "did not evaluate therapeutic alternatives (R1)"
+    data_gaps: list[str] = Field(min_length=1)
+    refusals: list[str] = Field(min_length=1)
     overall_confidence: Literal["high", "medium", "low"]
-    summary: str                       # plain-language answer for the clinician
+    summary: str = Field(min_length=80)  # plain-language answer for the clinician
     provenance_trace: list[Provenance]

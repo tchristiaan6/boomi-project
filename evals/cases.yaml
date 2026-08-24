@@ -1,0 +1,217 @@
+# Golden cases. Each hand-verified against FDA's own site on 2026-08-24.
+#
+# These run OFFLINE by default, replaying the committed fixtures in fixtures/,
+# so the results are deterministic and need no API key. `--live` reruns them
+# against api.fda.gov; count mismatches there usually mean the live database
+# moved since the fixture date, which is expected (recall and NDC counts grow).
+# To re-pin: run with --record, hand-verify the new numbers, update this file.
+#
+# The tool accepts any drug. These cases are chosen because they exercise
+# different code paths, not because they define scope.
+
+- name: rocuronium_full_loop
+  notes: >
+    The shape test: a drug the shortage database covers richly. 26 records
+    that collapse to 3 presentations across 11 firms, and an NDC set where
+    3 different strength strings are one 68-product concentration cluster
+    with 12 API-grade bulk products filtered out.
+  calls:
+    - tool: resolve_drug
+      args: {query: rocuronium}
+      expect:
+        - {path: data.is_marketed, op: eq, value: true}
+        - {path: data.candidates.0.confidence, op: eq, value: high}
+    - tool: get_shortage_picture
+      args: {ingredient: rocuronium}
+      expect:
+        - {path: data.record_count, op: eq, value: 26}
+        - {path: data.groups, op: len_eq, value: 3}
+        - {path: data.status_totals.Current, op: eq, value: 26}
+    - tool: find_alternate_sources
+      args: {ingredient: rocuronium}
+      expect:
+        - {path: data.marketed_product_count, op: eq, value: 68}
+        - {path: data.groups, op: len_eq, value: 1}
+        - {path: data.groups.0.parsed_strength, op: eq, value: 10 mg/mL}
+        - {path: data.groups.0.raw_strength_strings, op: len_eq, value: 3}
+        - {path: provenance.filtered_out.0.reason, op: eq, value: api_grade_bulk}
+        - {path: provenance.filtered_out.0.count, op: eq, value: 12}
+
+- name: propofol_r2
+  notes: >
+    The thesis case (R2). The number one OR drug per the primary user: zero
+    shortage records, but 19 recalls including 4 Class I. Silence on one
+    endpoint, signal on another.
+  calls:
+    - tool: get_shortage_picture
+      args: {ingredient: propofol}
+      expect:
+        - {path: data.record_count, op: eq, value: 0}
+        - {path: data.groups, op: len_eq, value: 0}
+    - tool: check_recalls
+      args: {ingredient: propofol}
+      expect:
+        - {path: data.record_count, op: eq, value: 19}
+        - {path: data.open_count, op: eq, value: 0}
+        - {path: data.by_classification.Class I, op: eq, value: 4}
+    - tool: find_alternate_sources
+      args: {ingredient: propofol}
+      expect:
+        - {path: data.marketed_product_count, op: eq, value: 38}
+        - {path: data.groups.0.parsed_strength, op: eq, value: 10 mg/mL}
+
+- name: lactated_ringers_r2_extreme
+  notes: >
+    R2 at its most extreme, and the sharpest single illustration of the
+    coverage gap. The word "ringer" appears in zero of 1,628 shortage
+    records. But enforcement has 18 recall records, including an ONGOING
+    Class I initiated 2026-04-28 on B. Braun 1000 mL bags: the exact
+    product the primary user cannot get. The original build notes said
+    zero recalls here; the combined-field search found these,
+    hand-verified against FDA's site. Resolution succeeds via the NDC
+    brand-name path, proving "shortage-silent" is not "does not exist".
+  calls:
+    - tool: resolve_drug
+      args: {query: lactated ringers}
+      expect:
+        - {path: data.is_marketed, op: eq, value: true}
+        - {path: data.candidates.0.matched_path, op: eq, value: ndc.brand_name}
+    - tool: get_shortage_picture
+      args: {ingredient: lactated ringers}
+      expect:
+        - {path: data.record_count, op: eq, value: 0}
+    - tool: check_recalls
+      args: {ingredient: lactated ringers}
+      expect:
+        - {path: data.record_count, op: eq, value: 18}
+        - {path: data.open_count, op: eq, value: 4}
+        - {path: data.by_classification.Class I, op: eq, value: 3}
+
+- name: succinylcholine_discontinuation
+  notes: Discontinuation path. One record, and it is To Be Discontinued.
+  calls:
+    - tool: get_discontinuations
+      args: {ingredient: succinylcholine}
+      expect:
+        - {path: data.record_count, op: eq, value: 1}
+    - tool: get_shortage_picture
+      args: {ingredient: succinylcholine}
+      expect:
+        - {path: data.status_totals.To Be Discontinued, op: eq, value: 1}
+
+- name: epinephrine_spread_r5
+  notes: >
+    One ingredient name spanning unrelated products (spec 3.5 / R5):
+    homeopathic [hp_X] oral dilutions, IM auto-injectors, IV syringes,
+    20 mg/mL dental. Route keeps unrelated clusters apart; nothing is
+    declared equivalent.
+  calls:
+    - tool: find_alternate_sources
+      args: {ingredient: epinephrine}
+      expect:
+        - {path: data.marketed_product_count, op: ge, value: 300}
+        - {path: data.groups, op: len_ge, value: 50}
+        - {path: data.groups, op: contains, value: "[hp_X]"}
+        - {path: data.groups, op: contains, value: "20 mg/mL"}
+        - {path: data.unparseable_strengths, op: len_eq, value: 0}
+
+- name: sodium_chloride_recall_dominant
+  notes: >
+    Recall-dominant profile. 22 shortage records, none Current (all To Be
+    Discontinued), against 1,000+ enforcement records with open 2026
+    activity. The signal lives on the endpoint the shortage view ignores.
+  calls:
+    - tool: get_shortage_picture
+      args: {ingredient: sodium chloride}
+      expect:
+        - {path: data.record_count, op: eq, value: 22}
+        - {path: data.status_totals.Current, op: not_exists}
+    - tool: check_recalls
+      args: {ingredient: sodium chloride}
+      expect:
+        - {path: data.record_count, op: ge, value: 1000}
+        - {path: data.open_count, op: ge, value: 50}
+
+- name: penicillin_g_benzathine_related_info
+  notes: >
+    The judgment surface (spec 3.1): a real related_info_link to an FDA
+    guidance document, one of only ~9 records in the database that have one.
+  calls:
+    - tool: get_shortage_picture
+      args: {ingredient: penicillin g benzathine}
+      expect:
+        - {path: data.record_count, op: eq, value: 4}
+        - {path: data.groups, op: contains, value: "https://www.fda.gov/media/"}
+
+- name: nonsense_graceful_failure
+  notes: >
+    Resolution failure must be honest, not invented. No fuzzy matching:
+    the warning says a misspelling returns zero, so "no match for this
+    string" cannot be read as "this product does not exist".
+  calls:
+    - tool: resolve_drug
+      args: {query: xqzzt nonsense drug}
+      expect:
+        - {path: data.candidates, op: len_eq, value: 0}
+        - {path: data.is_marketed, op: eq, value: false}
+        - {path: data.paths_tried, op: len_eq, value: 4}
+        - {path: provenance.warnings, op: contains, value: fuzzy}
+
+- name: clozapine_generality
+  notes: >
+    Generality case. Marketed (52 products), zero shortage records, and 5
+    historical recalls, all Terminated Class II (2014-2020). The build spec's
+    own ground truth said zero recalls; a wider search that includes
+    product_description found these 5, hand-verified against FDA's site.
+    The eval pins the corrected number.
+  calls:
+    - tool: get_shortage_picture
+      args: {ingredient: clozapine}
+      expect:
+        - {path: data.record_count, op: eq, value: 0}
+    - tool: check_recalls
+      args: {ingredient: clozapine}
+      expect:
+        - {path: data.record_count, op: eq, value: 5}
+        - {path: data.open_count, op: eq, value: 0}
+    - tool: find_alternate_sources
+      args: {ingredient: clozapine}
+      expect:
+        - {path: data.marketed_product_count, op: eq, value: 52}
+
+- name: levothyroxine_volume
+  notes: >
+    Generality + volume. Zero shortages, 180+ recalls, ~680 marketed
+    products. Stress-tests recall handling and grouping at scale.
+  calls:
+    - tool: get_shortage_picture
+      args: {ingredient: levothyroxine}
+      expect:
+        - {path: data.record_count, op: eq, value: 0}
+    - tool: check_recalls
+      args: {ingredient: levothyroxine}
+      expect:
+        - {path: data.record_count, op: ge, value: 170}
+    - tool: find_alternate_sources
+      args: {ingredient: levothyroxine}
+      expect:
+        - {path: data.marketed_product_count, op: ge, value: 600}
+
+- name: carboplatin_oncology
+  notes: >
+    Generality: an oncology shortage. Proves this is not an anesthesia tool
+    wearing a general-purpose label.
+  calls:
+    - tool: get_shortage_picture
+      args: {ingredient: carboplatin}
+      expect:
+        - {path: data.record_count, op: eq, value: 35}
+        - {path: data.status_totals.Current, op: eq, value: 29}
+    - tool: get_discontinuations
+      args: {ingredient: carboplatin}
+      expect:
+        - {path: data.record_count, op: eq, value: 6}
+    - tool: check_recalls
+      args: {ingredient: carboplatin}
+      expect:
+        - {path: data.record_count, op: eq, value: 8}
