@@ -8,15 +8,15 @@ That turns out to be a different question from "is it short," and the difference
 
 ## Who this is for
 
-My brother EJ Bouwman is a CRNA. When a drug he needs is constrained, he finds out from his pharmacy or from an empty shelf. My sister-in-law Liz Ingram Bouwman is a nurse practitioner; she is the reason insulins are in scope. Both reviewed the drug list this build is tested against. The secondary user is the pharmacy buyer supplying an OR.
+My brother is a CRNA. When a drug he needs is constrained, he finds out from his pharmacy or from an empty shelf. My sister-in-law is a nurse practitioner; she is the reason insulins are in scope. Both reviewed the drug list this build is tested against. The secondary user is the pharmacy buyer supplying an OR.
 
 ## The finding this is built around
 
-I started with a substitution tool, then a shortage monitor. Both died on contact with the data. What killed the monitor: I asked EJ what actually goes short in his OR. He said the simplest things - normal saline, lactated ringers, the volatile gases, antibiotics, and propofol, which he called the number one drug they use. Liz added insulins.
+I started with a substitution tool, then a shortage monitor. Both died on contact with the data. What killed the monitor: I asked my brother what actually goes short in his OR. He said the simplest things - normal saline, lactated ringers, the volatile gases, antibiotics, and propofol, which he called the number one drug they use. My sister-in-law added insulins.
 
 I checked every one of those against all 1,628 records in FDA's shortage database (2026-08-24):
 
-| What EJ and Liz named | Shortage records |
+| What they named | Shortage records |
 |---|---|
 | Propofol - "the #1 drug we use" | **0** |
 | Sevoflurane | **0** |
@@ -27,9 +27,9 @@ I checked every one of those against all 1,628 records in FDA's shortage databas
 | Normal saline | 22, none currently active |
 | Insulin | 4, all discontinuations |
 
-Eleven of twenty-two core anesthesia drugs return zero shortage records. The reason is structural: FDA's shortage database tracks manufacturer-reported shortages of specific NDC presentations. What EJ experiences is allocation - the distributor fills 60% of the saline order, the wholesaler backorders the cefazolin. Nobody reports that to FDA, so it never appears.
+Eleven of twenty-two core anesthesia drugs return zero shortage records. The reason is structural: FDA's shortage database tracks manufacturer-reported shortages of specific NDC presentations. What he experiences is allocation - the distributor fills 60% of the saline order, the wholesaler backorders the cefazolin. Nobody reports that to FDA, so it never appears.
 
-But FDA is not silent about these drugs, it is silent about them *in that one database*. The enforcement endpoint tells a different story. Lactated Ringer's has zero shortage mentions and 18 recall records, including an **ongoing Class I recall initiated April 2026 on B. Braun 1000 mL bags** - the exact product EJ can't get. Propofol has 19 recalls, 4 of them Class I. Sodium chloride has over 1,000.
+But FDA is not silent about these drugs, it is silent about them *in that one database*. The enforcement endpoint tells a different story. Lactated Ringer's has zero shortage mentions and 18 recall records, including an **ongoing Class I recall initiated April 2026 on B. Braun 1000 mL bags** - the exact product he can't get. Propofol has 19 recalls, 4 of them Class I. Sodium chloride has over 1,000.
 
 So the tool reports every signal FDA publishes about a product, across endpoints, and when FDA has nothing it says so plainly and says what that silence does and does not mean. For the drugs a clinician cares about most, "FDA does not track this" is usually the honest answer, and this tool treats that as a finding, not a failure.
 
@@ -98,7 +98,7 @@ The server exposes the six retrieval tools plus `verify_sources`, a utility the 
 
 ## The messy parts: why this data is harder than it looks
 
-Everything below is a real behavior of the openFDA APIs, verified against the live service. This is the list I would put in front of a CEO to explain why "just call the FDA API" is not a plan.
+Everything below is a real behavior of the openFDA APIs, verified against the live service. Together they are why "just call the FDA API" is not a plan.
 
 1. **The shortage flag does not mean what it says.** Two thirds of records marked as a "Current" shortage simultaneously say the product is "Available." Alerting on the status flag alone would page people constantly about nothing.
 2. **Silence is ambiguous, and silence is the common case.** Zero records for a drug can mean supply is fine, or that nobody reports the problem to FDA. The database cannot tell you which. Propofol, the most-used drug in an OR, has zero shortage records ever.
@@ -125,7 +125,7 @@ Every assessment ends with a Sources section, built and checked mechanically:
 
 ## Why an agent
 
-The honest version first: two of the three layers of this problem are not agentic. Detecting that a record changed is a diff. Delivering an alert is a print statement. Both are plain code here (see `monitor/` when Phase 3 lands). I used an agent only where a decision tree actually breaks:
+The honest version first: two of the three layers of this problem are not agentic. Detecting that a record changed is a diff. Delivering an alert is a print statement. Both are plain code here (see `monitor/` below). I used an agent only where a decision tree actually breaks:
 
 1. **The right endpoint is not knowable in advance.** Ask about rocuronium and the shortage endpoint answers richly. Ask about propofol and it is empty, so the question becomes whether enforcement has anything and whether the product is even marketed. The agent decides where to look next based on what came back empty.
 2. **Free text carries the signal.** `"Next Delivery: August 2026"` and `"Check wholesalers for inventory"` are different situations. The `related_info` field is returned verbatim by the tools and judged by the model, because no parser reduces it to a flag.
@@ -137,13 +137,14 @@ The MCP boundary is the boundary between mechanism and judgment. Everything dete
 
 ## The boundaries, and why they are honest
 
-Five rules, each an explicitly tested behavior (`evals/refusals.yaml` runs adversarial prompts against the real agent loop; the transcript in `evals/out/` is a saved run you can reproduce):
+Six rules, each an explicitly tested behavior (`evals/refusals.yaml` runs adversarial prompts against the real agent loop; the transcript in `evals/out/` is a saved run you can reproduce):
 
 - **R1 - No cross-molecule suggestion.** If no same-molecule source is available, it reports that and stops, even when pressed with "hypothetically, for education."
 - **R2 - "Not listed" is never "not short."** The most exercised rule in the build, given the coverage gap.
 - **R3 - Confidence scoped by product form.** Injectables, volatile gases, IV fluids and orals differ sharply in how well this data covers them.
 - **R4 - Never state or compute a dose.** Including "just the arithmetic" conversions between vial sizes.
 - **R5 - Group presentations, never declare equivalence.** The 68 rocuronium products clustering at one concentration are shown with FDA's raw strings. There is deliberately no `is_equivalent` field in the schema. A human judges.
+- **R6 - A refusal never names what it refuses.** "Did not evaluate alternatives such as vecuronium" is a recommendation wearing a disclaimer, so refusals and data gaps may say only "a different molecule" or "other agents," with no examples. This rule exists because the first adversarial run leaked exactly that way; the eval's leak scan treats a named alternative as a failure even inside a refusal, and no negated phrasing excuses it.
 
 These refusals are not caution theater. FDA publishes no therapeutic alternatives anywhere in this API - the shortage schema is 16 fields and none is an alternative, a substitution, or an equivalence. Any substitution the tool produced would be invented, not sourced.
 
@@ -154,7 +155,7 @@ These refusals are not caution theater. FDA publishes no therapeutic alternative
 - `--live` reruns against api.fda.gov. Grow-only counts (recalls, NDC listings) will drift upward from the fixture date; that is the live database moving, and the README's numbers are pinned to 2026-08-24 for that reason.
 - `evals/run_refusals.py` - the adversarial suite. 4/4 passing as committed.
 
-Two of the eval numbers correct my own earlier verification notes: clozapine has 5 historical recalls and Lactated Ringer's has 18 (not zero as first recorded), because the original check searched too narrowly. Details in [AI_USAGE.md](AI_USAGE.md); both corrected numbers were hand-verified against FDA's site.
+Two of the eval numbers correct my own earlier verification notes: clozapine has 5 historical recalls and Lactated Ringer's has 18 (not zero as first recorded), because the original check searched too narrowly. Both corrected numbers were hand-verified against FDA's site.
 
 ## What I deliberately cut
 
@@ -188,7 +189,7 @@ python -m monitor.run --replay quiet   # demo: a Reverified-only day, correctly 
 python -m monitor.run --replay change  # demo: real changes, correctly escalated
 ```
 
-A correct monitor is mostly silent, which is unshowable in a live demo, so the two replay scenarios are committed fixtures: one proves it stays quiet through a day of FDA no-op touches, the other proves it escalates an availability drop, a discontinuation flag, and a new open recall (a synthetic record, labeled as such). The default watchlist is EJ and Liz's drugs; it is configuration, not scope.
+A correct monitor is mostly silent, which is unshowable in a live demo, so the two replay scenarios are committed fixtures: one proves it stays quiet through a day of FDA no-op touches, the other proves it escalates an availability drop, a discontinuation flag, and a new open recall (a synthetic record, labeled as such). The default watchlist is their drugs; it is configuration, not scope.
 
 **Built single-user, architected for multi-user.** Drug state is global - a shortage on propofol is one fact no matter who watches it - so snapshots and diffs are keyed by drug, never by user. The pieces a hosted deployment swaps are seams, not rewrites: the watchlist becomes the union of all users' lists, `StateStore` (two methods, JSON files today) becomes a database table, and `deliver()` becomes per-user routing of each drug's events to its subscribers. Snapshot, diff, and materiality logic ship unchanged.
 
@@ -204,8 +205,7 @@ Public openFDA MCP servers already exist (Certus, cyanheads/openfda-mcp-server, 
 
 ## Hours
 
-[Tom: fill in before submission - "N hours on the submitted build. Any additional hours on the hosted front-end are separate and not part of this submission."]
+5 hours on the submitted build: 2 deciding what to build, 3 building it.
 
-## AI usage
+A further 2 hours went to a hosted front-end for clinician feedback and 1 hour to the write-up. Neither is part of this submission.
 
-See [AI_USAGE.md](AI_USAGE.md) - where the model helped, where it was wrong, and how I caught it, with specifics.
