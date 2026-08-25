@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FDATrack Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #f6f8f8;
+    --card: #ffffff;
+    --ink: #182220;
+    --muted: #5b6a67;
+    --line: #d7dedd;
+    --accent: #0d7a8a;
+    --accent-soft: rgba(13, 122, 138, 0.10);
+    --judge: #a15c07;
+    --judge-soft: rgba(178, 104, 12, 0.10);
+    --kill: #9a3b39;
+    --kill-soft: rgba(154, 59, 57, 0.09);
+    --zone: rgba(13, 122, 138, 0.045);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #101716; --card: #17201f; --ink: #e6edeb; --muted: #93a4a0;
+      --line: #2c3937; --accent: #56b7c6; --accent-soft: rgba(86,183,198,0.14);
+      --judge: #e0a458; --judge-soft: rgba(224,164,88,0.13);
+      --kill: #d98a86; --kill-soft: rgba(217,138,134,0.12);
+      --zone: rgba(86,183,198,0.06);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #101716; --card: #17201f; --ink: #e6edeb; --muted: #93a4a0;
+    --line: #2c3937; --accent: #56b7c6; --accent-soft: rgba(86,183,198,0.14);
+    --judge: #e0a458; --judge-soft: rgba(224,164,88,0.13);
+    --kill: #d98a86; --kill-soft: rgba(217,138,134,0.12);
+    --zone: rgba(86,183,198,0.06);
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.55; margin: 0; padding: 40px 20px 72px;
+  }
+  main { max-width: 1000px; margin: 0 auto; }
+  h1, h2, h3 { font-family: "Space Grotesk", "Inter", sans-serif; letter-spacing: -0.015em; text-wrap: balance; }
+  h1 { font-size: 2.1rem; margin: 0.4rem 0 0.5rem; }
+  h2 { font-size: 1.22rem; margin: 0; }
+  h3 { font-size: 0.95rem; margin: 0 0 0.4rem; }
+  p { margin: 0 0 0.7rem; }
+  .kicker {
+    font-family: "IBM Plex Mono", monospace; font-size: 0.78rem; font-weight: 500;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin: 0;
+  }
+  .lede { color: var(--muted); max-width: 64ch; margin: 0 0 1.6rem; }
+  .lede strong { color: var(--ink); }
+  .stats { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 2.4rem; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; font-size: 0.85rem; color: var(--muted); }
+  .stat b { display: block; font-family: "Space Grotesk", sans-serif; font-size: 1.25rem; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+  section { display: grid; grid-template-columns: 46px 1fr; gap: 0 18px; margin-bottom: 2.6rem; align-items: start; }
+  .num { font-family: "IBM Plex Mono", monospace; font-size: 0.82rem; font-weight: 500; color: var(--accent); padding-top: 4px; letter-spacing: 0.04em; }
+  .head { grid-column: 2; }
+  .body { grid-column: 2; margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.9rem; }
+  .section-note { color: var(--muted); font-size: 0.9rem; margin: 0.15rem 0 0; max-width: 70ch; }
+
+  ul { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 0.34rem; }
+  li { font-size: 0.92rem; }
+  li::marker { color: var(--accent); }
+  b, strong { color: var(--ink); font-weight: 600; }
+  .mono { font-family: "IBM Plex Mono", monospace; font-size: 0.83em; }
+
+  .trail { display: flex; flex-direction: column; gap: 8px; }
+  .step { background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--line); border-radius: 0 10px 10px 0; padding: 11px 16px; }
+  .step.dead { border-left-color: var(--kill); background: var(--kill-soft); }
+  .step.live { border-left-color: var(--accent); background: var(--accent-soft); }
+  .step .tag { font-family: "IBM Plex Mono", monospace; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .step.dead .tag { color: var(--kill); }
+  .step.live .tag { color: var(--accent); }
+  .step p { margin: 0.2rem 0 0; font-size: 0.9rem; color: var(--muted); }
+  .step p b { color: var(--ink); }
+
+  figure { background: var(--card); border: 1px solid var(--line); border-radius: 14px; margin: 0; padding: 20px 20px 12px; overflow-x: auto; }
+  figure svg { display: block; min-width: 700px; max-width: 100%; height: auto; margin: 0 auto; color: var(--ink); }
+  figcaption { font-size: 0.84rem; color: var(--muted); margin-top: 9px; max-width: 76ch; }
+  figcaption b { color: var(--ink); }
+
+  .tablewrap { overflow-x: auto; border-radius: 12px; }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; font-size: 0.87rem; }
+  th, td { text-align: left; padding: 8px 14px; border-top: 1px solid var(--line); vertical-align: top; }
+  thead th { border-top: none; background: var(--accent-soft); color: var(--ink); font-family: "Space Grotesk", sans-serif; font-size: 0.8rem; }
+  td { color: var(--muted); }
+  td:first-child { color: var(--ink); font-family: "IBM Plex Mono", monospace; font-size: 0.79rem; }
+  td.num-cell { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+
+  .callout { background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--judge); border-radius: 0 12px 12px 0; padding: 13px 17px; font-size: 0.9rem; }
+  .callout .tag { font-family: "IBM Plex Mono", monospace; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--judge); }
+  .callout p { margin: 0.25rem 0 0; color: var(--muted); }
+  .callout p b { color: var(--ink); }
+
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+  .cardlet { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 15px; }
+  .cardlet h3 { color: var(--ink); }
+  .cardlet p { margin: 0; font-size: 0.86rem; color: var(--muted); }
+
+  footer { color: var(--muted); font-size: 0.8rem; margin-top: 2.6rem; border-top: 1px solid var(--line); padding-top: 14px; }
+  a { color: var(--accent); }
+  a:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  svg text { font-family: "Inter", ui-sans-serif, sans-serif; }
+  svg .t-box { font-size: 12.5px; font-weight: 600; fill: currentColor; }
+  svg .t-sub { font-size: 10.5px; fill: var(--muted); }
+  svg .t-mono { font-family: "IBM Plex Mono", monospace; font-size: 11px; fill: currentColor; }
+  svg .t-mono-sm { font-family: "IBM Plex Mono", monospace; font-size: 9.5px; fill: var(--muted); }
+  svg .t-label { font-size: 10px; fill: var(--muted); }
+  svg .t-zone { font-family: "IBM Plex Mono", monospace; font-size: 10px; font-weight: 500; letter-spacing: 0.09em; fill: var(--muted); }
+  svg .t-bound { font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 500; fill: var(--accent); letter-spacing: 0.06em; }
+  svg .box { fill: var(--card); stroke: var(--line); stroke-width: 1.2; }
+  svg .box-accent { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.2; }
+  svg .box-judge { fill: var(--judge-soft); stroke: var(--judge); stroke-width: 1.2; }
+  svg .wire { stroke: currentColor; stroke-width: 1.2; fill: none; opacity: 0.75; }
+  svg .zone { fill: var(--zone); stroke: var(--line); stroke-dasharray: 3 3; stroke-width: 1; }
+  @media (max-width: 620px) {
+    section { grid-template-columns: 1fr; gap: 0; }
+    .head, .body { grid-column: 1; }
+    .num { padding-top: 0; margin-bottom: 2px; }
+  }
+</style></head>
+<body>
+<main>
+  <p class="kicker">FDATrack &#183; system diagram</p>
+  <h1>Architecture</h1>
+  <p class="lede">An agent that checks every FDA database for any drug you name, cites what it found, and says plainly when FDA has nothing on it. <strong>The architectural claim: the MCP boundary is the boundary between mechanism and judgment.</strong> Open this file in a browser; GitHub shows HTML as source.</p>
+
+  <div class="stats">
+    <div class="stat"><b>3</b>FDA databases</div>
+    <div class="stat"><b>6 + 1</b>MCP tools</div>
+    <div class="stat"><b>52/52</b>eval assertions, offline</div>
+    <div class="stat"><b>4/4</b>adversarial refusals</div>
+    <div class="stat"><b>11</b>golden cases</div>
+  </div>
+
+  <div class="trail" style="gap:2rem">
+<figure>
+<svg viewBox="0 0 960 705" role="img" aria-label="Layered architecture: three clients call one agent loop, which calls seven MCP tools; the tools sit on a deterministic core that queries three openFDA databases. A dashed line between the agent loop and the tools marks the MCP boundary between judgment and mechanism.">
+        <defs>
+          <marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0.5 L7.5 4 L0 7.5 Z" fill="currentColor" opacity="0.75"/>
+          </marker>
+        </defs>
+
+        <!-- clients -->
+        <text x="20" y="24" class="t-zone">CLIENTS</text>
+        <rect x="20"  y="34" width="290" height="58" rx="8" class="box"/>
+        <text x="165" y="57" text-anchor="middle" class="t-box">Claude Desktop / Claude Code</text>
+        <text x="165" y="74" text-anchor="middle" class="t-sub">MCP over stdio &#183; reviewer's machine</text>
+        <rect x="334" y="34" width="290" height="58" rx="8" class="box"/>
+        <text x="479" y="57" text-anchor="middle" class="t-box">CLI &#183; fdatrack assess</text>
+        <text x="479" y="74" text-anchor="middle" class="t-sub">full trace + cited answer &#183; reviewer's machine</text>
+        <rect x="648" y="34" width="292" height="58" rx="8" class="box"/>
+        <text x="794" y="57" text-anchor="middle" class="t-box">fdatrack.com</text>
+        <text x="794" y="74" text-anchor="middle" class="t-sub">browser &#8594; Vercel &#8594; Railway, SSE stream</text>
+
+        <line x1="165" y1="92" x2="300" y2="136" class="wire" marker-end="url(#ar)"/>
+        <line x1="479" y1="92" x2="479" y2="136" class="wire" marker-end="url(#ar)"/>
+        <line x1="794" y1="92" x2="660" y2="136" class="wire" marker-end="url(#ar)"/>
+
+        <!-- judgment -->
+        <rect x="180" y="140" width="600" height="74" rx="10" class="box-judge"/>
+        <text x="480" y="165" text-anchor="middle" class="t-box">Assess: the agent loop (the only place a model runs)</text>
+        <text x="480" y="183" text-anchor="middle" class="t-sub">Claude via the Anthropic API &#183; decides which tool to call next when one comes back empty,</text>
+        <text x="480" y="197" text-anchor="middle" class="t-sub">judges free-text notes, writes the assessment &#183; refusals R1-R6 are tested behavior</text>
+
+        <!-- boundary -->
+        <line x1="20" y1="248" x2="940" y2="248" stroke="var(--accent)" stroke-width="1.6" stroke-dasharray="7 5"/>
+        <text x="480" y="240" text-anchor="middle" class="t-bound">THE MCP BOUNDARY &#183; judgment above, deterministic mechanism below</text>
+
+        <line x1="480" y1="214" x2="480" y2="266" class="wire" marker-end="url(#ar)"/>
+
+        <!-- tools: 7 boxes, 4 + 3 -->
+        <text x="20" y="284" class="t-zone">MCP TOOL SURFACE</text>
+        <rect x="20"  y="294" width="218" height="44" rx="7" class="box-accent"/>
+        <text x="129" y="313" text-anchor="middle" class="t-mono">resolve_drug</text>
+        <text x="129" y="329" text-anchor="middle" class="t-mono-sm">name &#8594; molecule, 4 paths</text>
+        <rect x="254" y="294" width="218" height="44" rx="7" class="box-accent"/>
+        <text x="363" y="313" text-anchor="middle" class="t-mono">get_shortage_picture</text>
+        <text x="363" y="329" text-anchor="middle" class="t-mono-sm">grouped, notes verbatim</text>
+        <rect x="488" y="294" width="218" height="44" rx="7" class="box-accent"/>
+        <text x="597" y="313" text-anchor="middle" class="t-mono">get_discontinuations</text>
+        <text x="597" y="329" text-anchor="middle" class="t-mono-sm">permanent withdrawals</text>
+        <rect x="722" y="294" width="218" height="44" rx="7" class="box-accent"/>
+        <text x="831" y="313" text-anchor="middle" class="t-mono">find_alternate_sources</text>
+        <text x="831" y="329" text-anchor="middle" class="t-mono-sm">every product, no verdicts</text>
+        <rect x="137" y="350" width="218" height="44" rx="7" class="box-accent"/>
+        <text x="246" y="369" text-anchor="middle" class="t-mono">check_recalls</text>
+        <text x="246" y="385" text-anchor="middle" class="t-mono-sm">open + historical</text>
+        <rect x="371" y="350" width="218" height="44" rx="7" class="box-accent"/>
+        <text x="480" y="369" text-anchor="middle" class="t-mono">get_label_facts</text>
+        <text x="480" y="385" text-anchor="middle" class="t-mono-sm">one product's specifics</text>
+        <rect x="605" y="350" width="218" height="44" rx="7" class="box-accent"/>
+        <text x="714" y="369" text-anchor="middle" class="t-mono">verify_sources</text>
+        <text x="714" y="385" text-anchor="middle" class="t-mono-sm">re-checks every cited URL</text>
+
+        <line x1="480" y1="394" x2="480" y2="428" class="wire" marker-end="url(#ar)"/>
+
+        <!-- mechanism -->
+        <rect x="20" y="432" width="920" height="104" rx="10" class="box"/>
+        <text x="480" y="456" text-anchor="middle" class="t-box">core/ &#183; pure Python, zero MCP or HTTP imports, one codebase for every surface</text>
+        <text x="480" y="478" text-anchor="middle" class="t-sub">pagination past the 1,000-record cap &#183; whole-word matching (no hot-dog-bun hits) &#183; strength grouping (68 makers, not 8)</text>
+        <text x="480" y="494" text-anchor="middle" class="t-sub">API-grade bulk filtered (1 kg/kg drums) &#183; two date formats reconciled &#183; misleading errors decoded &#183; rate limiting + retries</text>
+        <text x="480" y="510" text-anchor="middle" class="t-sub">provenance on every result: the exact queries issued, totals, what was filtered and why</text>
+        <text x="480" y="527" text-anchor="middle" class="t-label">fixtures record/replay makes all of this testable offline, no keys</text>
+
+        <line x1="200" y1="536" x2="200" y2="580" class="wire" marker-end="url(#ar)"/>
+        <line x1="480" y1="536" x2="480" y2="580" class="wire" marker-end="url(#ar)"/>
+        <line x1="760" y1="536" x2="760" y2="580" class="wire" marker-end="url(#ar)"/>
+        <text x="212" y="566" class="t-label">search + paginate</text>
+        <text x="492" y="566" class="t-label">search + paginate</text>
+        <text x="772" y="566" class="t-label">combined-field search</text>
+
+        <!-- endpoints -->
+        <rect x="20" y="584" width="920" height="96" rx="10" class="zone"/>
+        <text x="36" y="606" class="t-zone">API.FDA.GOV (openFDA &#183; public, live)</text>
+        <rect x="60"  y="616" width="260" height="52" rx="7" class="box"/>
+        <text x="190" y="637" text-anchor="middle" class="t-mono">/drug/shortages.json</text>
+        <text x="190" y="653" text-anchor="middle" class="t-sub">1,628 records &#183; shortages + discontinuations</text>
+        <rect x="350" y="616" width="260" height="52" rx="7" class="box"/>
+        <text x="480" y="637" text-anchor="middle" class="t-mono">/drug/ndc.json</text>
+        <text x="480" y="653" text-anchor="middle" class="t-sub">137,198 marketed products</text>
+        <rect x="640" y="616" width="260" height="52" rx="7" class="box"/>
+        <text x="770" y="637" text-anchor="middle" class="t-mono">/drug/enforcement.json</text>
+        <text x="770" y="653" text-anchor="middle" class="t-sub">17,876 recall records</text>
+      </svg>
+        <figcaption><b>The MCP boundary is the boundary between mechanism and judgment.</b> The mess is handled once, below the line. The model spends its judgment on what only judgment can do: choosing the next endpoint when one comes back empty, reading free-text notes, and saying what the data does not say.</figcaption>
+      </figure>
+
+<figure>
+<svg viewBox="0 0 960 400" role="img" aria-label="Two deployments side by side. The graded submission runs entirely on the reviewer's machine and calls api.fda.gov directly. fdatrack.com runs the web app on Vercel and the same core on Railway behind a FastAPI adapter with a six-hour cache. Both share the identical core package.">
+        <defs>
+          <marker id="ar2" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0.5 L7.5 4 L0 7.5 Z" fill="currentColor" opacity="0.75"/>
+          </marker>
+        </defs>
+
+        <!-- left zone: graded -->
+        <rect x="20" y="16" width="440" height="290" rx="10" class="zone"/>
+        <text x="36" y="40" class="t-zone">GRADED SUBMISSION - REVIEWER'S MACHINE</text>
+        <rect x="48" y="56" width="180" height="48" rx="7" class="box"/>
+        <text x="138" y="76" text-anchor="middle" class="t-box">Claude Desktop / Code</text>
+        <text x="138" y="92" text-anchor="middle" class="t-sub">the judgment layer</text>
+        <rect x="252" y="56" width="180" height="48" rx="7" class="box"/>
+        <text x="342" y="76" text-anchor="middle" class="t-box">CLI</text>
+        <text x="342" y="92" text-anchor="middle" class="t-sub">own agent loop</text>
+        <line x1="138" y1="104" x2="200" y2="148" class="wire" marker-end="url(#ar2)"/>
+        <line x1="342" y1="104" x2="280" y2="148" class="wire" marker-end="url(#ar2)"/>
+        <text x="120" y="132" class="t-label">stdio</text>
+        <rect x="120" y="152" width="240" height="44" rx="7" class="box"/>
+        <text x="240" y="171" text-anchor="middle" class="t-mono">servers/mcp_stdio.py</text>
+        <text x="240" y="187" text-anchor="middle" class="t-sub">thin adapter</text>
+        <line x1="240" y1="196" x2="240" y2="228" class="wire" marker-end="url(#ar2)"/>
+        <rect x="120" y="232" width="240" height="48" rx="7" class="box-accent"/>
+        <text x="240" y="252" text-anchor="middle" class="t-box">core/</text>
+        <text x="240" y="268" text-anchor="middle" class="t-sub">every user is their own IP and rate limit</text>
+
+        <!-- right zone: hosted -->
+        <rect x="500" y="16" width="440" height="290" rx="10" class="zone"/>
+        <text x="516" y="40" class="t-zone">FDATRACK.COM - HOSTED, NOT PART OF THE SUBMISSION</text>
+        <rect x="528" y="56" width="180" height="48" rx="7" class="box"/>
+        <text x="618" y="76" text-anchor="middle" class="t-box">Browser</text>
+        <text x="618" y="92" text-anchor="middle" class="t-sub">CRNA, NP, colleagues</text>
+        <rect x="732" y="56" width="180" height="48" rx="7" class="box"/>
+        <text x="822" y="76" text-anchor="middle" class="t-box">Vercel &#183; Next.js</text>
+        <text x="822" y="92" text-anchor="middle" class="t-sub">static app, no keys</text>
+        <line x1="708" y1="80" x2="728" y2="80" class="wire" marker-end="url(#ar2)"/>
+        <line x1="618" y1="104" x2="700" y2="148" class="wire" marker-end="url(#ar2)"/>
+        <text x="600" y="132" class="t-label">SSE: live trace, then the assessment</text>
+        <rect x="600" y="152" width="240" height="44" rx="7" class="box"/>
+        <text x="720" y="171" text-anchor="middle" class="t-mono">Railway &#183; servers/api.py</text>
+        <text x="720" y="187" text-anchor="middle" class="t-sub">FastAPI &#183; 6h cache &#183; keys server-side</text>
+        <line x1="720" y1="196" x2="720" y2="228" class="wire" marker-end="url(#ar2)"/>
+        <rect x="600" y="232" width="240" height="48" rx="7" class="box-accent"/>
+        <text x="720" y="252" text-anchor="middle" class="t-box">core/</text>
+        <text x="720" y="268" text-anchor="middle" class="t-sub">the same package, byte for byte</text>
+
+        <!-- shared substrate -->
+        <line x1="240" y1="280" x2="240" y2="330" class="wire" marker-end="url(#ar2)"/>
+        <line x1="720" y1="280" x2="720" y2="330" class="wire" marker-end="url(#ar2)"/>
+        <rect x="20" y="334" width="560" height="44" rx="8" class="box"/>
+        <text x="300" y="354" text-anchor="middle" class="t-mono">api.fda.gov</text>
+        <text x="300" y="369" text-anchor="middle" class="t-sub">three drug databases, queried live on every assessment</text>
+        <rect x="620" y="334" width="320" height="44" rx="8" class="box"/>
+        <text x="780" y="354" text-anchor="middle" class="t-mono">Anthropic API</text>
+        <text x="780" y="369" text-anchor="middle" class="t-sub">the model behind assess, swappable via env</text>
+      </svg>
+        <figcaption><b>Neither target compromises the other.</b> The graded repo has no hosting dependencies: clone, install, run, all evals pass offline from committed fixtures. The hosted site reuses <span class="mono">core/</span> unchanged behind a thin FastAPI adapter. Hours reported separately.</figcaption>
+      </figure>
+
+<figure>
+<svg viewBox="0 0 960 150" role="img" aria-label="Three-stage monitor pipeline: detect in plain code, assess with the agent, deliver in plain code. The diff between snapshots drops FDA's Reverified no-ops, and only material changes reach the agent.">
+        <defs>
+          <marker id="ar3" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0.5 L7.5 4 L0 7.5 Z" fill="currentColor" opacity="0.75"/>
+          </marker>
+        </defs>
+        <rect x="20" y="30" width="260" height="72" rx="9" class="box-accent"/>
+        <text x="150" y="56" text-anchor="middle" class="t-box">Detect &#183; plain code</text>
+        <text x="150" y="74" text-anchor="middle" class="t-sub">snapshot per drug, diff on record identity,</text>
+        <text x="150" y="89" text-anchor="middle" class="t-sub">drop the 77% "Reverified" no-ops</text>
+        <line x1="280" y1="66" x2="346" y2="66" class="wire" marker-end="url(#ar3)"/>
+        <text x="313" y="52" text-anchor="middle" class="t-label">material</text>
+        <text x="313" y="63" text-anchor="middle" class="t-label">changes only</text>
+        <rect x="350" y="30" width="260" height="72" rx="9" class="box-judge"/>
+        <text x="480" y="56" text-anchor="middle" class="t-box">Assess &#183; the agent</text>
+        <text x="480" y="74" text-anchor="middle" class="t-sub">full cited assessment of each drug</text>
+        <text x="480" y="89" text-anchor="middle" class="t-sub">that actually changed</text>
+        <line x1="610" y1="66" x2="676" y2="66" class="wire" marker-end="url(#ar3)"/>
+        <rect x="680" y="30" width="260" height="72" rx="9" class="box-accent"/>
+        <text x="810" y="56" text-anchor="middle" class="t-box">Deliver &#183; plain code</text>
+        <text x="810" y="74" text-anchor="middle" class="t-sub">stdout + JSONL &#183; future: route each drug's</text>
+        <text x="810" y="89" text-anchor="middle" class="t-sub">events to its subscribers, per user</text>
+        <text x="480" y="130" text-anchor="middle" class="t-label">drug state is global, users are subscribers: the multi-user seams are the watchlist source, the state store, and delivery routing</text>
+      </svg>
+        <figcaption><b>Only the middle step is agentic.</b> Detect and deliver are cron jobs and are built as cron jobs.</figcaption>
+      </figure>
+  </div>
+
+  <footer>FDATrack &#183; data verified against api.fda.gov 2026-08-24 &#183; repo: github.com/tchristiaan6/boomi-project &#183; live: fdatrack.com</footer>
+</main>
+</body>
+</html>

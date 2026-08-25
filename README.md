@@ -135,6 +135,8 @@ The honest version first: two of the three layers of this problem are not agenti
 
 The MCP boundary is the boundary between mechanism and judgment. Everything deterministic lives below it: pagination past the 1,000-record cap, grouping `50mg/5mL` with `10mg/mL`, filtering API-grade bulk (`1 kg/kg`), reconciling `MM/DD/YYYY` against `YYYYMMDD`, retrying name paths. Everything requiring a call lives above it. A thin one-tool-per-endpoint wrapper would push every one of those quirks into the model's context to rediscover on every run, unverifiably and differently each time.
 
+The full system diagram (clients, the boundary, the tool surface, the core, the three databases, and where each deployment runs) is in [ARCHITECTURE_DIAGRAM.html](ARCHITECTURE_DIAGRAM.html). GitHub shows HTML files as source; open it in a browser.
+
 ## The boundaries, and why they are honest
 
 Six rules, each an explicitly tested behavior (`evals/refusals.yaml` runs adversarial prompts against the real agent loop; the transcript in `evals/out/` is a saved run you can reproduce):
