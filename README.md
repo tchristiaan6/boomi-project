@@ -209,3 +209,7 @@ Public openFDA MCP servers already exist (Certus, cyanheads/openfda-mcp-server, 
 
 A further 2 hours went to a hosted front-end for clinician feedback and 1 hour to the write-up. Neither is part of this submission.
 
+## AI usage
+
+See [AI_USAGE.md](AI_USAGE.md): the build log, the decisions, where the model helped most, where it was wrong, and how each catch happened.
+
